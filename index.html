@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZZBased's ArXiv Daily</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+        }
+        
+        .card-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        
+        .card a {
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .card-date {
+            font-size: 0.95rem;
+            color: #888;
+        }
+        
+        .card-arrow {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        footer a {
+            color: white;
+        }
+        
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="emoji">📚</div>
+            <h1>ArXiv 论文日报</h1>
+            <p class="subtitle">每日精选 AI/ML 领域最新论文</p>
+        </header>
+        
+        <div class="card-container">
+            <div class="card">
+                <a href="arxiv/daily_arxiv_2026-01-29.html">
+                    <div>
+                        <div class="card-title">📅 2026-01-29 论文日报</div>
+                        <div class="card-date">Recommendation & LLM Agent</div>
+                    </div>
+                    <span class="card-arrow">→</span>
+                </a>
+            </div>
+            
+            <div class="card">
+                <a href="arxiv/daily_arxiv_2026-01-28.html">
+                    <div>
+                        <div class="card-title">📅 2026-01-28 论文日报</div>
+                        <div class="card-date">Recommendation & LLM Agent</div>
+                    </div>
+                    <span class="card-arrow">→</span>
+                </a>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank">daily-arxiv</a> | © 2026 ZZBased</p>
+        </footer>
+    </div>
+</body>
+</html>
