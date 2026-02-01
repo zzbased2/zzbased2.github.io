@@ -6,406 +6,70 @@
     <title>ZZBased | AI/ML 研究探索</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --primary: #667eea;
-            --primary-dark: #5a6fd6;
-            --secondary: #764ba2;
-            --accent: #f093fb;
-            --bg-dark: #1a1a2e;
-            --bg-light: #f8f9fa;
-            --text-dark: #2d3436;
-            --text-light: #636e72;
-            --card-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-light);
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-        
-        /* Navigation */
-        nav {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            padding: 15px 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-        }
-        
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo-icon {
-            font-size: 1.8rem;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 30px;
-            list-style: none;
-        }
-        
-        .nav-links a {
-            color: rgba(255,255,255,0.9);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-            padding: 8px 16px;
-            border-radius: 8px;
-        }
-        
-        .nav-links a:hover, .nav-links a.active {
-            color: white;
-            background: rgba(255,255,255,0.15);
-        }
-        
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            padding: 80px 20px;
-            text-align: center;
-            color: white;
-        }
-        
-        .hero-emoji {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .hero .subtitle {
-            font-size: 1.3rem;
-            opacity: 0.95;
-            max-width: 600px;
-            margin: 0 auto 30px;
-        }
-        
-        .hero-stats {
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-            margin-top: 40px;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-        
-        .stat-label {
-            font-size: 0.95rem;
-            opacity: 0.85;
-        }
-        
-        /* Main Content */
-        .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 20px;
-        }
-        
-        /* Section */
-        .section {
-            margin-bottom: 60px;
-        }
-        
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .section-icon {
-            font-size: 2rem;
-        }
-        
-        .section-title {
-            font-size: 1.8rem;
-            color: var(--text-dark);
-        }
-        
-        .section-subtitle {
-            color: var(--text-light);
-            font-size: 1rem;
-            margin-left: auto;
-        }
-        
-        /* Directory Grid */
-        .directory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
-        
-        .directory-card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: var(--card-shadow);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid rgba(102, 126, 234, 0.1);
-        }
-        
-        .directory-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.2);
-        }
-        
-        .directory-card a {
-            text-decoration: none;
-            color: inherit;
-        }
-        
-        .directory-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .directory-icon {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .directory-name {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .directory-desc {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            margin-bottom: 20px;
-        }
-        
-        .directory-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .directory-count {
-            font-size: 0.9rem;
-            color: var(--text-light);
-        }
-        
-        .directory-arrow {
-            font-size: 1.3rem;
-            color: var(--primary);
-            transition: transform 0.3s;
-        }
-        
-        .directory-card:hover .directory-arrow {
-            transform: translateX(5px);
-        }
-        
-        /* Report Cards */
-        .report-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .report-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .report-card:hover {
-            transform: translateX(10px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-        
-        .report-card a {
-            text-decoration: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .report-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .report-date {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .report-tag {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
-        
-        .report-desc {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-        
-        .report-arrow {
-            font-size: 1.5rem;
-            color: var(--primary);
-        }
-        
-        /* About Section */
-        .about-content {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .about-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-        }
-        
-        .about-item {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .about-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-        
-        .about-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 10px;
-        }
-        
-        .about-desc {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-        
-        /* Footer */
-        footer {
-            background: var(--bg-dark);
-            color: rgba(255,255,255,0.8);
-            padding: 40px 20px;
-            text-align: center;
-        }
-        
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 20px;
-        }
-        
-        .footer-links a {
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-        
-        .footer-links a:hover {
-            color: white;
-        }
-        
-        .footer-copyright {
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-            
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .hero-stats {
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .section-subtitle {
-                margin-left: 0;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #667eea; --primary-dark: #5a6fd6; --secondary: #764ba2; --accent: #f093fb; --bg-dark: #1a1a2e; --bg-light: #f8f9fa; --text-dark: #2d3436; --text-light: #636e72; --card-shadow: 0 10px 40px rgba(102, 126, 234, 0.15); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg-light); color: var(--text-dark); line-height: 1.6; }
+        nav { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); padding: 15px 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
+        .nav-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { color: white; font-size: 1.5rem; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .logo-icon { font-size: 1.8rem; }
+        .nav-links { display: flex; gap: 30px; list-style: none; }
+        .nav-links a { color: rgba(255,255,255,0.9); text-decoration: none; font-weight: 500; transition: color 0.3s; padding: 8px 16px; border-radius: 8px; }
+        .nav-links a:hover, .nav-links a.active { color: white; background: rgba(255,255,255,0.15); }
+        .hero { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); padding: 80px 20px; text-align: center; color: white; }
+        .hero-emoji { font-size: 4rem; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .hero h1 { font-size: 3rem; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .hero .subtitle { font-size: 1.3rem; opacity: 0.95; max-width: 600px; margin: 0 auto 30px; }
+        .hero-stats { display: flex; justify-content: center; gap: 50px; margin-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 2.5rem; font-weight: 700; }
+        .stat-label { font-size: 0.95rem; opacity: 0.85; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 60px 20px; }
+        .section { margin-bottom: 60px; }
+        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .section-icon { font-size: 2rem; }
+        .section-title { font-size: 1.8rem; color: var(--text-dark); }
+        .section-subtitle { color: var(--text-light); font-size: 1rem; margin-left: auto; }
+        .directory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .directory-card { background: white; border-radius: 16px; padding: 30px; box-shadow: var(--card-shadow); transition: transform 0.3s ease, box-shadow 0.3s ease; border: 1px solid rgba(102, 126, 234, 0.1); }
+        .directory-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(102, 126, 234, 0.2); }
+        .directory-card a { text-decoration: none; color: inherit; }
+        .directory-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .directory-icon { font-size: 2.5rem; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .directory-name { font-size: 1.4rem; font-weight: 600; color: var(--primary); }
+        .directory-desc { color: var(--text-light); font-size: 0.95rem; margin-bottom: 20px; }
+        .directory-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #eee; }
+        .directory-count { font-size: 0.9rem; color: var(--text-light); }
+        .directory-arrow { font-size: 1.3rem; color: var(--primary); transition: transform 0.3s; }
+        .directory-card:hover .directory-arrow { transform: translateX(5px); }
+        .report-list { display: flex; flex-direction: column; gap: 15px; }
+        .report-card { background: white; border-radius: 12px; padding: 20px 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all 0.3s ease; border-left: 4px solid var(--primary); }
+        .report-card:hover { transform: translateX(10px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .report-card a { text-decoration: none; display: flex; justify-content: space-between; align-items: center; }
+        .report-info { display: flex; align-items: center; gap: 15px; }
+        .report-date { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
+        .report-tag { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .report-desc { color: var(--text-light); font-size: 0.9rem; }
+        .report-arrow { font-size: 1.5rem; color: var(--primary); }
+        .about-content { background: white; border-radius: 16px; padding: 40px; box-shadow: var(--card-shadow); }
+        .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+        .about-item { text-align: center; padding: 20px; }
+        .about-icon { font-size: 2.5rem; margin-bottom: 15px; }
+        .about-title { font-size: 1.1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 10px; }
+        .about-desc { color: var(--text-light); font-size: 0.9rem; }
+        footer { background: var(--bg-dark); color: rgba(255,255,255,0.8); padding: 40px 20px; text-align: center; }
+        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; }
+        .footer-links a { color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s; }
+        .footer-links a:hover { color: white; }
+        .footer-copyright { font-size: 0.9rem; opacity: 0.7; }
+        @media (max-width: 768px) { .nav-links { display: none; } .hero h1 { font-size: 2rem; } .hero-stats { flex-direction: column; gap: 20px; } .section-header { flex-direction: column; align-items: flex-start; gap: 10px; } .section-subtitle { margin-left: 0; } }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <a href="/" class="logo">
-                <span class="logo-icon">🚀</span>
-                <span>ZZBased</span>
-            </a>
+            <a href="/" class="logo"><span class="logo-icon">🚀</span><span>ZZBased</span></a>
             <ul class="nav-links">
                 <li><a href="#home" class="active">首页</a></li>
                 <li><a href="#directories">目录</a></li>
@@ -415,164 +79,109 @@
             </ul>
         </div>
     </nav>
-    
-    <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-emoji">🧠</div>
         <h1>AI/ML 研究探索</h1>
         <p class="subtitle">每日追踪前沿 AI 论文，探索推荐系统与 LLM Agent 的最新进展</p>
         <div class="hero-stats">
-            <div class="stat-item">
-                <div class="stat-number">📚</div>
-                <div class="stat-label">ArXiv 日报</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">🤖</div>
-                <div class="stat-label">LLM Agent</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">💡</div>
-                <div class="stat-label">推荐系统</div>
-            </div>
+            <div class="stat-item"><div class="stat-number">📚</div><div class="stat-label">ArXiv 日报</div></div>
+            <div class="stat-item"><div class="stat-number">🤖</div><div class="stat-label">LLM Agent</div></div>
+            <div class="stat-item"><div class="stat-number">💡</div><div class="stat-label">推荐系统</div></div>
         </div>
     </section>
-    
-    <!-- Main Content -->
     <main class="main-content">
-        
-        <!-- Directories Section -->
         <section class="section" id="directories">
             <div class="section-header">
                 <span class="section-icon">📁</span>
                 <h2 class="section-title">内容目录</h2>
                 <span class="section-subtitle">浏览所有分类内容</span>
             </div>
-            
             <div class="directory-grid">
-                <!-- ArXiv Directory -->
                 <div class="directory-card">
                     <a href="arxiv/">
-                        <div class="directory-header">
-                            <span class="directory-icon">📄</span>
-                            <span class="directory-name">ArXiv 论文日报</span>
-                        </div>
+                        <div class="directory-header"><span class="directory-icon">📄</span><span class="directory-name">ArXiv 论文日报</span></div>
                         <p class="directory-desc">每日精选 AI/ML 领域最新论文，涵盖推荐系统、LLM Agent 等热门方向，包含论文摘要、关键词分析和词云可视化。</p>
-                        <div class="directory-meta">
-                            <span class="directory-count">📊 持续更新中</span>
-                            <span class="directory-arrow">→</span>
-                        </div>
+                        <div class="directory-meta"><span class="directory-count">📊 共 3 份日报</span><span class="directory-arrow">→</span></div>
                     </a>
                 </div>
-                
-                <!-- More directories can be added here -->
                 <div class="directory-card">
                     <a href="#">
-                        <div class="directory-header">
-                            <span class="directory-icon">🔬</span>
-                            <span class="directory-name">研究笔记</span>
-                        </div>
+                        <div class="directory-header"><span class="directory-icon">🔬</span><span class="directory-name">研究笔记</span></div>
                         <p class="directory-desc">深度解读经典论文，记录学习心得与实践经验，分享技术见解与思考。</p>
-                        <div class="directory-meta">
-                            <span class="directory-count">🚧 敬请期待</span>
-                            <span class="directory-arrow">→</span>
-                        </div>
+                        <div class="directory-meta"><span class="directory-count">🚧 敬请期待</span><span class="directory-arrow">→</span></div>
                     </a>
                 </div>
-                
                 <div class="directory-card">
                     <a href="#">
-                        <div class="directory-header">
-                            <span class="directory-icon">🛠️</span>
-                            <span class="directory-name">开源项目</span>
-                        </div>
+                        <div class="directory-header"><span class="directory-icon">🛠️</span><span class="directory-name">开源项目</span></div>
                         <p class="directory-desc">分享实用的开源工具和项目，包括本站使用的 daily-arxiv 论文追踪系统。</p>
-                        <div class="directory-meta">
-                            <span class="directory-count">🚧 敬请期待</span>
-                            <span class="directory-arrow">→</span>
-                        </div>
+                        <div class="directory-meta"><span class="directory-count">🚧 敬请期待</span><span class="directory-arrow">→</span></div>
                     </a>
                 </div>
             </div>
         </section>
-        
-        <!-- Latest ArXiv Reports -->
         <section class="section" id="arxiv">
             <div class="section-header">
                 <span class="section-icon">📰</span>
                 <h2 class="section-title">最新 ArXiv 日报</h2>
                 <span class="section-subtitle"><a href="arxiv/" style="color: var(--primary); text-decoration: none;">查看全部 →</a></span>
             </div>
-            
             <div class="report-list">
+
                 <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-01-29.html">
+                    <a href="arxiv/daily_arxiv_2026-02-01.html">
                         <div class="report-info">
-                            <span class="report-date">📅 2026-01-29</span>
+                            <span class="report-date">📅 2026-02-01</span>
                             <span class="report-tag">最新</span>
                             <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
                         </div>
                         <span class="report-arrow">→</span>
                     </a>
                 </div>
-                
+
                 <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-01-28.html">
+                    <a href="arxiv/daily_arxiv_2026-01-29.html">
                         <div class="report-info">
-                            <span class="report-date">📅 2026-01-28</span>
-                            <span class="report-tag">历史</span>
+                            <span class="report-date">📅 2026-01-29</span>
+                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
                             <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
                         </div>
                         <span class="report-arrow">→</span>
                     </a>
                 </div>
+
+                <div class="report-card">
+                    <a href="arxiv/daily_arxiv_2026-01-28.html">
+                        <div class="report-info">
+                            <span class="report-date">📅 2026-01-28</span>
+                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
+                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
+                        </div>
+                        <span class="report-arrow">→</span>
+                    </a>
+                </div>
+
             </div>
         </section>
-        
-        <!-- About Section -->
         <section class="section" id="about">
-            <div class="section-header">
-                <span class="section-icon">ℹ️</span>
-                <h2 class="section-title">关于本站</h2>
-            </div>
-            
+            <div class="section-header"><span class="section-icon">ℹ️</span><h2 class="section-title">关于本站</h2></div>
             <div class="about-content">
                 <div class="about-grid">
-                    <div class="about-item">
-                        <div class="about-icon">🤖</div>
-                        <div class="about-title">AI 驱动</div>
-                        <div class="about-desc">使用大语言模型自动分析和总结论文，提供高质量的内容摘要</div>
-                    </div>
-                    <div class="about-item">
-                        <div class="about-icon">⚡</div>
-                        <div class="about-title">每日更新</div>
-                        <div class="about-desc">自动追踪 ArXiv 最新论文，确保您不错过任何重要研究</div>
-                    </div>
-                    <div class="about-item">
-                        <div class="about-icon">🎯</div>
-                        <div class="about-title">精准定位</div>
-                        <div class="about-desc">专注推荐系统与 LLM Agent 领域，提供专业化的内容筛选</div>
-                    </div>
-                    <div class="about-item">
-                        <div class="about-icon">📊</div>
-                        <div class="about-title">可视化分析</div>
-                        <div class="about-desc">提供词云、关键词分析等可视化功能，直观展示研究趋势</div>
-                    </div>
+                    <div class="about-item"><div class="about-icon">🤖</div><div class="about-title">AI 驱动</div><div class="about-desc">使用大语言模型自动分析和总结论文，提供高质量的内容摘要</div></div>
+                    <div class="about-item"><div class="about-icon">⚡</div><div class="about-title">每日更新</div><div class="about-desc">自动追踪 ArXiv 最新论文，确保您不错过任何重要研究</div></div>
+                    <div class="about-item"><div class="about-icon">🎯</div><div class="about-title">精准定位</div><div class="about-desc">专注推荐系统与 LLM Agent 领域，提供专业化的内容筛选</div></div>
+                    <div class="about-item"><div class="about-icon">📊</div><div class="about-title">可视化分析</div><div class="about-desc">提供词云、关键词分析等可视化功能，直观展示研究趋势</div></div>
                 </div>
             </div>
         </section>
-        
     </main>
-    
-    <!-- Footer -->
     <footer>
         <div class="footer-links">
             <a href="https://github.com/zzbased2" target="_blank">🔗 GitHub</a>
             <a href="arxiv/">📄 ArXiv 日报</a>
             <a href="https://github.com/zzbased2/efficiency" target="_blank">⚙️ 项目源码</a>
         </div>
-        <p class="footer-copyright">
-            © 2026 ZZBased | Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank" style="color: var(--primary);">daily-arxiv</a>
-        </p>
+        <p class="footer-copyright">© 2026 ZZBased | Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank" style="color: var(--primary);">daily-arxiv</a></p>
     </footer>
 </body>
 </html>
