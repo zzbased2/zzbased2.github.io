@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人项目 | ZZBased</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --project-color: #6c5ce7;
+            --project-gradient: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3436;
+            --text-light: #636e72;
+            --card-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: white;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .breadcrumb {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            font-size: 0.95rem;
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .breadcrumb span {
+            color: var(--text-light);
+            margin: 0 8px;
+        }
+
+        .page-header {
+            background: var(--project-gradient);
+            padding: 60px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .page-header-icon { font-size: 3.5rem; margin-bottom: 15px; }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .page-header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Project cards */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid var(--project-color);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(108, 92, 231, 0.2);
+        }
+
+        .project-card a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .project-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .project-card-icon { font-size: 1.8rem; }
+
+        .project-card-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--project-color);
+        }
+
+        .project-card-desc {
+            color: var(--text-light);
+            font-size: 0.92rem;
+            margin-bottom: 18px;
+        }
+
+        .project-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .project-tag {
+            background: #f3e5f5;
+            color: var(--project-color);
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .empty-state-icon { font-size: 4rem; margin-bottom: 20px; }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--text-light);
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        footer {
+            background: #1a1a2e;
+            color: rgba(255,255,255,0.8);
+            padding: 30px 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+                padding: 15px 20px;
+                gap: 5px;
+            }
+            .page-header h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <span>🚀</span>
+                <span>ZZBased</span>
+            </a>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')">☰</button>
+            <ul class="nav-links">
+                <li><a href="../">首页</a></li>
+                <li><a href="../arxiv/">Daily ArXiv</a></li>
+                <li><a href="../articles/">个人文章</a></li>
+                <li><a href="./" class="active">个人项目</a></li>
+                <li><a href="https://github.com/zzbased2" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="../">🏠 首页</a>
+            <span>/</span>
+            <span style="color: var(--text-dark);">🛠️ 个人项目</span>
+        </div>
+    </div>
+
+    <header class="page-header">
+        <div class="page-header-icon">🛠️</div>
+        <h1>个人项目</h1>
+        <p class="subtitle">开源工具与技术实践</p>
+    </header>
+
+    <main class="main-content">
+
+        <div class="project-grid">
+            <!-- Project 1: daily-arxiv -->
+            <div class="project-card">
+                <a href="https://github.com/zzbased2/efficiency" target="_blank">
+                    <div class="project-card-header">
+                        <span class="project-card-icon">⚙️</span>
+                        <span class="project-card-name">daily-arxiv</span>
+                    </div>
+                    <p class="project-card-desc">每日自动追踪 ArXiv 最新论文的工具，支持自定义关键词、AI 摘要生成、词云可视化，并自动发布到 GitHub Pages。</p>
+                    <div class="project-tags">
+                        <span class="project-tag">Python</span>
+                        <span class="project-tag">ArXiv API</span>
+                        <span class="project-tag">LLM</span>
+                        <span class="project-tag">自动化</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Project 2: 数独游戏 -->
+            <div class="project-card">
+                <a href="./sudoku/">
+                    <div class="project-card-header">
+                        <span class="project-card-icon">🔢</span>
+                        <span class="project-card-name">数独游戏</span>
+                    </div>
+                    <p class="project-card-desc">经典数独益智游戏，支持多难度级别、智能提示、笔记功能和历史记录，适合锻炼逻辑思维能力。</p>
+                    <div class="project-tags">
+                        <span class="project-tag">HTML</span>
+                        <span class="project-tag">CSS</span>
+                        <span class="project-tag">JavaScript</span>
+                        <span class="project-tag">益智游戏</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Project 3: 智力大闯关 -->
+            <div class="project-card">
+                <a href="./brain-teasers/">
+                    <div class="project-card-header">
+                        <span class="project-card-icon">🧠</span>
+                        <span class="project-card-name">智力大闯关</span>
+                    </div>
+                    <p class="project-card-desc">趣味脑筋急转弯闯关游戏，包含多套精选题库，涵盖逻辑推理、数学思维、脑筋急转弯等多种题型，适合亲子互动。</p>
+                    <div class="project-tags">
+                        <span class="project-tag">HTML</span>
+                        <span class="project-tag">JavaScript</span>
+                        <span class="project-tag">脑筋急转弯</span>
+                        <span class="project-tag">亲子教育</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>© 2026 ZZBased | <a href="../">返回首页</a> | Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank">daily-arxiv</a></p>
+    </footer>
+</body>
+</html>

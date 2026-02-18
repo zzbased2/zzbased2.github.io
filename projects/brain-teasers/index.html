@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧠 智力大闯关</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(180deg, #1a1a3e 0%, #2d2d6e 40%, #4a4a8a 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .game-container {
+    position: relative;
+    width: 1000px; height: 700px;
+    background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 30%, #E0F7FA 100%);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  /* ===== Selection Screen ===== */
+  .select-screen {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 300;
+  }
+  .select-screen h1 {
+    font-size: 40px; color: #fff;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+    margin-bottom: 12px; letter-spacing: 6px;
+  }
+  .select-screen .subtitle {
+    font-size: 16px; color: rgba(255,255,255,0.8);
+    margin-bottom: 36px;
+  }
+  .bank-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 640px;
+  }
+  .bank-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 16px;
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    color: #fff;
+    min-width: 180px;
+  }
+  .bank-card:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: #fff;
+    transform: translateY(-6px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .bank-card .bank-icon { font-size: 40px; margin-bottom: 10px; }
+  .bank-card .bank-name { font-size: 16px; font-weight: bold; line-height: 1.5; }
+  .bank-card .bank-desc { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 6px; }
+  /* last two cards center */
+  .bank-grid .bank-card:nth-child(4) { grid-column: 1 / 2; justify-self: end; }
+  .bank-grid .bank-card:nth-child(5) { grid-column: 2 / 3; }
+
+  /* ===== Group Selection Screen ===== */
+  .group-screen {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 310;
+  }
+  .group-screen h1 {
+    font-size: 40px; color: #fff;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+    margin-bottom: 12px; letter-spacing: 6px;
+  }
+  .group-screen .subtitle {
+    font-size: 16px; color: rgba(255,255,255,0.8);
+    margin-bottom: 36px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 700px;
+  }
+  .group-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 32px 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    color: #fff;
+    min-width: 190px;
+  }
+  .group-card:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: #fff;
+    transform: translateY(-8px);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+  }
+  .group-card .group-icon { font-size: 52px; margin-bottom: 14px; }
+  .group-card .group-name { font-size: 20px; font-weight: bold; line-height: 1.5; }
+  .group-card .group-desc { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 8px; line-height: 1.4; }
+  .group-card .group-count { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 10px; }
+
+  /* ===== Back Button (used in select-screen) ===== */
+  .back-btn {
+    position: absolute; top: 18px; left: 20px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #fff; font-size: 14px;
+    cursor: pointer; transition: all 0.2s;
+    z-index: 5;
+  }
+  .back-btn:hover {
+    background: rgba(255,255,255,0.35);
+    transform: translateX(-2px);
+  }
+
+  /* ===== Position Selection Screen ===== */
+  .position-screen {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #667eea 100%);
+    z-index: 300;
+  }
+  .position-screen h2 {
+    font-size: 30px; color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin-bottom: 8px; letter-spacing: 3px;
+  }
+  .position-screen .pos-subtitle {
+    font-size: 15px; color: rgba(255,255,255,0.85);
+    margin-bottom: 30px;
+  }
+  .position-screen .bank-name-tag {
+    font-size: 16px; color: rgba(255,255,255,0.9);
+    margin-bottom: 20px; padding: 6px 16px;
+    background: rgba(255,255,255,0.15); border-radius: 20px;
+  }
+  .pos-grid {
+    display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+    max-width: 500px;
+  }
+  .pos-card {
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff;
+  }
+  .pos-card:hover {
+    background: rgba(255,255,255,0.4);
+    border-color: #fff;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .pos-card .pos-num { font-size: 28px; font-weight: bold; }
+  .pos-card .pos-label { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .pos-card.recommended {
+    border-color: #FFD700;
+    box-shadow: 0 0 15px rgba(255,215,0,0.4);
+  }
+  .pos-card.recommended .pos-label { color: #FFD700; }
+
+  /* ===== Title Bar ===== */
+  .title-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 50px;
+    background: linear-gradient(90deg, #FF6B6B, #FF8E53, #FFC107);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  }
+  .title-bar h1 { font-size: 22px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); letter-spacing: 4px; }
+  /* ===== Info Panel ===== */
+  .info-panel { position: absolute; top: 60px; left: 15px; z-index: 50; display: flex; gap: 12px; }
+  .info-badge { background: rgba(255,255,255,0.9); border-radius: 20px; padding: 6px 14px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .info-badge.question { color: #5C6BC0; }
+  .info-badge.flowers { color: #E91E63; }
+  .info-badge.step { color: #00897B; }
+  /* ===== Scene ===== */
+  .scene { position: absolute; left: 0; top: 50px; bottom: 0; width: 420px; }
+  .stairs-container { position: absolute; bottom: 0; left: 20px; width: 380px; height: 620px; }
+  .stair { position: absolute; left: 0; height: 40px; border-radius: 6px; display: flex; align-items: center; }
+  .stair .stair-number { margin-left: 10px; font-size: 13px; color: rgba(255,255,255,0.7); font-weight: bold; }
+  /* ===== Character ===== */
+  .character { position: absolute; z-index: 30; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); transition: bottom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.3s; }
+  .character .body { font-size: 44px; line-height: 1; }
+  /* ===== Water ===== */
+  .water { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(30,136,229,0.55) 0%, rgba(21,101,192,0.7) 40%, rgba(13,71,161,0.85) 100%); transition: height 1s ease-in-out; z-index: 10; overflow: hidden; }
+  .water::before { content: ''; position: absolute; top: -8px; left: 0; width: 200%; height: 16px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16'%3E%3Cpath d='M0,8 Q25,0 50,8 T100,8 T150,8 T200,8 V16 H0 Z' fill='rgba(30,136,229,0.7)'/%3E%3C/svg%3E") repeat-x; animation: wave 2s linear infinite; }
+  @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-100px); } }
+  /* ===== Crocodile ===== */
+  .crocodile { position: absolute; bottom: 5px; z-index: 11; transition: bottom 1s ease-in-out; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.4)); display: flex; gap: 2px; align-items: flex-end; animation: crocodileSwim 3s ease-in-out infinite; }
+  .crocodile .croc-emoji { font-size: 36px; }
+  .crocodile .croc-emoji:nth-child(2) { font-size: 42px; animation-delay: 0.3s; }
+  .crocodile .croc-emoji:nth-child(3) { font-size: 32px; animation-delay: 0.6s; }
+  .crocodile .croc-emoji:nth-child(odd) { transform: scaleX(-1); }
+  @keyframes crocodileSwim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  /* ===== Flowers ===== */
+  .flowers-display { position: absolute; top: 95px; left: 15px; z-index: 50; display: flex; flex-wrap: wrap; gap: 4px; max-width: 200px; }
+  .flower-item { font-size: 28px; animation: flowerPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes flowerPop { 0% { transform: scale(0) rotate(-180deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+  /* ===== Question Panel ===== */
+  .question-panel { position: absolute; right: 15px; top: 60px; width: 540px; bottom: 15px; display: flex; flex-direction: column; z-index: 60; }
+  .question-card { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+  .question-header { font-size: 14px; color: #9E9E9E; margin-bottom: 10px; font-weight: bold; }
+  .question-text { font-size: 16px; line-height: 1.7; color: #333; margin-bottom: 20px; flex-shrink: 0; }
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option-btn { display: flex; align-items: center; padding: 14px 20px; border: 2px solid #E0E0E0; border-radius: 12px; background: #FAFAFA; cursor: pointer; font-size: 15px; color: #333; transition: all 0.2s; text-align: left; line-height: 1.5; }
+  .option-btn:hover { border-color: #5C6BC0; background: #EDE7F6; transform: translateX(4px); }
+  .option-btn.correct { border-color: #4CAF50; background: #E8F5E9; color: #2E7D32; animation: correctPulse 0.5s; }
+  .option-btn.wrong { border-color: #F44336; background: #FFEBEE; color: #C62828; animation: shake 0.5s; }
+  .option-btn.disabled { pointer-events: none; opacity: 0.6; }
+  .option-label { font-weight: bold; margin-right: 10px; min-width: 24px; color: #5C6BC0; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+  @keyframes correctPulse { 0%{transform:scale(1)} 50%{transform:scale(1.03)} 100%{transform:scale(1)} }
+  .feedback { margin-top: 16px; padding: 14px 18px; border-radius: 10px; font-size: 14px; line-height: 1.6; display: none; }
+  .feedback.correct { display: block; background: #E8F5E9; color: #2E7D32; border-left: 4px solid #4CAF50; }
+  .feedback.wrong { display: block; background: #FFEBEE; color: #C62828; border-left: 4px solid #F44336; }
+  .next-btn { margin-top: 14px; padding: 12px 28px; background: linear-gradient(135deg, #5C6BC0, #7E57C2); color: white; border: none; border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer; align-self: center; transition: all 0.3s; display: none; letter-spacing: 2px; }
+  .next-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(92,107,192,0.4); }
+  /* ===== End Screen ===== */
+  .end-screen { position: absolute; top:0;right:0;bottom:0;left:0; display:none; flex-direction:column; align-items:center; justify-content:center; z-index:200; }
+  .end-screen.win { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  .end-screen.lose { background: linear-gradient(135deg, #f5576c, #ff6b6b); }
+  .end-screen h1 { font-size: 44px; color: #fff; text-shadow: 3px 3px 6px rgba(0,0,0,0.3); margin-bottom: 16px; }
+  .end-screen .result-text { font-size: 20px; color: rgba(255,255,255,0.9); margin-bottom: 10px; }
+  .end-screen .result-stats { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 16px 0; }
+  .end-screen .stat-item { background: rgba(255,255,255,0.15); border-radius: 14px; padding: 10px 18px; text-align: center; min-width: 100px; }
+  .end-screen .stat-item .stat-val { font-size: 26px; font-weight: bold; color: #fff; }
+  .end-screen .stat-item .stat-label { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .end-screen .result-flowers { font-size: 36px; margin: 12px 0; }
+  .end-screen .rating { font-size: 22px; color: #fff; font-weight: bold; margin-bottom: 10px; padding: 8px 20px; background: rgba(255,255,255,0.2); border-radius: 20px; }
+  .end-screen .special-badge { font-size: 18px; color: #FFD700; margin-bottom: 20px; padding: 6px 16px; background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.4); border-radius: 16px; display: none; }
+  .restart-btn { padding: 14px 50px; font-size: 20px; font-weight: bold; color: #fff; background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.6); border-radius: 50px; cursor: pointer; transition: all 0.3s; letter-spacing: 3px; }
+  .restart-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+  /* ===== Game Over Overlay ===== */
+  .game-over-overlay { position:absolute; top:0;right:0;bottom:0;left:0; background:rgba(0,0,0,0.7); z-index:150; display:none; align-items:center; justify-content:center; }
+  .game-over-overlay .eaten-msg { font-size: 36px; color: #fff; text-align: center; animation: fadeInUp 0.6s; }
+  @keyframes fadeInUp { 0%{transform:translateY(30px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+  /* ===== Decorative ===== */
+  .cloud { position: absolute; font-size: 30px; opacity: 0.4; z-index: 1; animation: cloudFloat 25s linear infinite; }
+  @keyframes cloudFloat { 0%{transform:translateX(-60px)} 100%{transform:translateX(450px)} }
+  .sun { position: absolute; top: 15px; right: 30px; font-size: 38px; z-index: 2; animation: sunGlow 3s ease-in-out infinite; }
+  @keyframes sunGlow { 0%,100%{transform:scale(1);filter:brightness(1)} 50%{transform:scale(1.1);filter:brightness(1.2)} }
+  .danger-flash { animation: dangerFlash 0.3s ease-in-out 3; }
+  @keyframes dangerFlash { 0%,100%{box-shadow:inset 0 0 0 rgba(255,0,0,0)} 50%{box-shadow:inset 0 0 60px rgba(255,0,0,0.3)} }
+  .trophy { position: absolute; z-index: 20; font-size: 30px; animation: trophyBounce 2s ease-in-out infinite; }
+  @keyframes trophyBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  /* ===== Combo Toast ===== */
+  .combo-toast {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 180; pointer-events: none;
+    font-size: 28px; font-weight: bold; color: #fff;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.4);
+    padding: 14px 32px; border-radius: 20px;
+    animation: comboIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards, comboOut 0.4s 1.6s ease-in forwards;
+  }
+  .combo-toast.combo3 { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
+  .combo-toast.combo5 { background: linear-gradient(135deg, #667eea, #764ba2); font-size: 32px; }
+  @keyframes comboIn { 0%{transform:translate(-50%,-50%) scale(0);opacity:0} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
+  @keyframes comboOut { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(-50%,-80%) scale(0.5);opacity:0} }
+  /* ===== Timer Bar ===== */
+  .timer-bar-container {
+    width: 100%; height: 8px; background: #E0E0E0; border-radius: 4px;
+    margin-bottom: 12px; overflow: hidden; display: none;
+  }
+  .timer-bar-container.active { display: block; }
+  .timer-bar {
+    height: 100%; border-radius: 4px;
+    transition: width 1s linear, background 1s linear;
+    width: 100%; background: #4CAF50;
+  }
+  .timer-bar.warning { background: #FF9800; }
+  .timer-bar.danger { background: #F44336; }
+  .timer-text {
+    font-size: 12px; color: #9E9E9E; text-align: right;
+    margin-bottom: 4px; display: none;
+  }
+  .timer-text.active { display: block; }
+  /* ===== Timer Toggle ===== */
+  .timer-toggle {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 20px; color: #fff; font-size: 15px;
+  }
+  .timer-toggle .toggle-switch {
+    position: relative; width: 48px; height: 26px;
+    background: rgba(255,255,255,0.3); border-radius: 13px;
+    cursor: pointer; transition: background 0.3s;
+  }
+  .timer-toggle .toggle-switch.on { background: #4CAF50; }
+  .timer-toggle .toggle-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; background: #fff; border-radius: 50%;
+    transition: transform 0.3s;
+  }
+  .timer-toggle .toggle-switch.on::after { transform: translateX(22px); }
+</style>
+</head>
+<body>
+<div class="game-container" id="gameContainer">
+  <!-- Group Selection Screen -->
+  <div class="group-screen" id="groupScreen">
+    <h1>🧠 智力大闯关</h1>
+    <p class="subtitle">请选择一个题目大类开始挑战吧！</p>
+    <div class="group-grid" id="groupGrid"></div>
+  </div>
+  <!-- Selection Screen -->
+  <div class="select-screen" id="selectScreen">
+    <button class="back-btn" id="backToGroupBtn">⬅️ 返回大类</button>
+    <h1>🧠 智力大闯关</h1>
+    <p class="subtitle" id="selectSubtitle">请选择一套题库开始挑战吧！</p>
+    <div class="bank-grid" id="bankGrid"></div>
+  </div>
+  <!-- Position Selection Screen -->
+  <div class="position-screen" id="positionScreen">
+    <h2>🧒 选择起始位置</h2>
+    <div class="bank-name-tag" id="positionBankName"></div>
+    <p class="pos-subtitle">你想从第几级台阶出发？台阶越低难度越大哦！</p>
+    <div class="pos-grid" id="posGrid"></div>
+    <div class="timer-toggle" id="timerToggle">
+      <span>⏱️ 限时模式</span>
+      <div class="toggle-switch" id="timerSwitch"></div>
+      <span style="font-size:12px;opacity:0.7">每题 30 秒</span>
+    </div>
+  </div>
+  <!-- Title Bar -->
+  <div class="title-bar"><h1 id="gameTitle">🧠 智力大闯关</h1></div>
+  <!-- Info Panel -->
+  <div class="info-panel">
+    <div class="info-badge question">📝 第 <span id="questionNum">1</span> / <span id="totalQuestions">10</span> 题</div>
+    <div class="info-badge flowers">🌸 大红花: <span id="flowerCount">0</span></div>
+    <div class="info-badge step">📍 第 <span id="stepNum">2</span> 级台阶</div>
+  </div>
+  <div class="flowers-display" id="flowersDisplay"></div>
+  <!-- Scene -->
+  <div class="scene">
+    <div class="cloud" style="top:20px;left:-40px;animation-delay:0s">☁️</div>
+    <div class="cloud" style="top:60px;left:-40px;animation-delay:8s;font-size:24px">☁️</div>
+    <div class="sun">🌞</div>
+    <div class="stairs-container" id="stairsContainer"></div>
+    <div class="character" id="character"><div class="body">🧒</div></div>
+    <div class="trophy" id="trophy">🏆</div>
+    <div class="water" id="water"></div>
+    <div class="crocodile" id="crocodile"><span class="croc-emoji">🐊</span><span class="croc-emoji">🐊</span><span class="croc-emoji">🐊</span></div>
+  </div>
+  <!-- Question Panel -->
+  <div class="question-panel" id="questionPanel">
+    <div class="question-card">
+      <div class="timer-text" id="timerText"></div>
+      <div class="timer-bar-container" id="timerBarContainer"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="question-header" id="questionHeader"></div>
+      <div class="question-text" id="questionText"></div>
+      <div class="options" id="optionsContainer"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="next-btn" id="nextBtn">下一题 ➜</button>
+    </div>
+  </div>
+  <!-- Game Over -->
+  <div class="game-over-overlay" id="gameOverOverlay">
+    <div class="eaten-msg">🐊 啊！被鳄鱼吃掉了！<br><span style="font-size:20px;opacity:0.8">水面淹没了你所在的台阶...</span></div>
+  </div>
+  <!-- End Screen -->
+  <div class="end-screen" id="endScreen">
+    <h1 id="endTitle"></h1>
+    <p class="result-text" id="endResultText"></p>
+    <div class="result-stats" id="endStats"></div>
+    <div class="result-flowers" id="endFlowers"></div>
+    <div class="rating" id="endRating"></div>
+    <div class="special-badge" id="specialBadge"></div>
+    <button class="restart-btn" id="restartBtn">🔄 重新选择题库</button>
+  </div>
+</div>
+<!-- Question Bank Data (external .js files) -->
+<script src="questions/bank1.js"></script>
+<script src="questions/bank2.js"></script>
+<script src="questions/bank3.js"></script>
+<script src="questions/bank4.js"></script>
+<script src="questions/bank5.js"></script>
+<script src="questions/bank6.js"></script>
+<script src="questions/bank7.js"></script>
+<script>
+// ===== All Question Banks (loaded from external .js files) =====
+var allBanks = window.questionBanks;
+
+var defaultIcons = ['📚', '🎯', '🔢', '🏋️', '⚡', '🧩', '🎲', '💡', '🔬', '🎭', '🌟', '🧪', '📐', '🎪', '🔮'];
+var defaultDescs = ['经典逻辑与推理题', '巧思妙解趣味题', '数学思维训练题', '综合思维体操题', '智慧挑战进阶题',
+  '趣味逻辑推理题', '创意思维训练题', '灵感激发题', '科学探索题', '综合能力挑战题'];
+// Auto-generate bankIcons / bankDescs based on how many banks are loaded
+var bankKeys = Object.keys(allBanks);
+var bankIcons = bankKeys.map(function(_, i) { return defaultIcons[i % defaultIcons.length]; });
+var bankDescs = bankKeys.map(function(_, i) { return defaultDescs[i % defaultDescs.length]; });
+
+// ===== Game State =====
+var questions = [];
+var currentQuestion = 0;
+var playerStep = 2;
+var waterLevel = 0;
+var flowerCount = 0;
+var gameActive = false;
+var answered = false;
+var TOTAL_STAIRS = 13;
+var STAIR_HEIGHT = 38;
+var STAIR_GAP = 4;
+var STAIR_UNIT = STAIR_HEIGHT + STAIR_GAP;
+var SCENE_BOTTOM = 10;
+var stairWidths = {};
+var crocInterval = null;
+var selectedBankKey = null;
+var audioCtx = null;
+var comboCount = 0;
+var maxCombo = 0;
+var timerMode = false;
+var timerInterval = null;
+var timerSeconds = 30;
+var timerRemaining = 30;
+
+// ===== Sound Effects using Web Audio API =====
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playVictorySound() {
+  try {
+    var ctx = getAudioCtx();
+    // Cheerful ascending arpeggio
+    var notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.35);
+    });
+    // Add a final sparkle
+    var osc2 = ctx.createOscillator();
+    var gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.value = 1318.5; // E6
+    gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.5);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime + 0.5);
+    osc2.stop(ctx.currentTime + 1.0);
+  } catch(e) { /* ignore audio errors */ }
+}
+
+function playSadSound() {
+  try {
+    var ctx = getAudioCtx();
+    // Descending minor notes - sad/ominous
+    var notes = [392, 349.23, 311.13, 261.63]; // G4, F4, Eb4, C4
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      // Add vibrato for sadness
+      var vibrato = ctx.createOscillator();
+      var vibratoGain = ctx.createGain();
+      vibrato.frequency.value = 5;
+      vibratoGain.gain.value = 3;
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
+      vibrato.start(ctx.currentTime + i * 0.2);
+      vibrato.stop(ctx.currentTime + i * 0.2 + 0.5);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.2 + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.2);
+      osc.stop(ctx.currentTime + i * 0.2 + 0.5);
+    });
+    // Add a low rumble for the crocodile
+    var rumble = ctx.createOscillator();
+    var rumbleGain = ctx.createGain();
+    rumble.type = 'sine';
+    rumble.frequency.value = 80;
+    rumbleGain.gain.setValueAtTime(0.2, ctx.currentTime + 0.1);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+    rumble.connect(rumbleGain);
+    rumbleGain.connect(ctx.destination);
+    rumble.start(ctx.currentTime + 0.1);
+    rumble.stop(ctx.currentTime + 1.0);
+  } catch(e) { /* ignore audio errors */ }
+}
+
+// ===== Group config =====
+var groupConfig = {
+  '数学思维': { icon: '🔢', desc: '计算题、数列规律、几何思维、概率统计等' },
+  '逻辑推理': { icon: '🧩', desc: '条件推理、排列组合、策略博弈等' },
+  '脑筋急转弯': { icon: '🤪', desc: '趣味谜题、文字陷阱、脑洞题等' }
+};
+
+// Helper: infer group for a bank based on most frequent category
+function inferGroup(bank) {
+  if (bank.group) return bank.group;
+  var counts = {};
+  bank.questions.forEach(function(q) {
+    var cat = q.category || '未知';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  var maxCat = '数学思维', maxN = 0;
+  for (var c in counts) { if (counts[c] > maxN) { maxN = counts[c]; maxCat = c; } }
+  return maxCat;
+}
+
+// ===== Build Group Selection Screen =====
+function buildGroupScreen() {
+  var grid = document.getElementById('groupGrid');
+  grid.innerHTML = '';
+  // Collect groups from all banks
+  var groups = {}; // groupName -> { banks: [...keys], totalQuestions: N }
+  for (var key in allBanks) {
+    var bank = allBanks[key];
+    var g = inferGroup(bank);
+    if (!groups[g]) groups[g] = { banks: [], totalQuestions: 0 };
+    groups[g].banks.push(key);
+    groups[g].totalQuestions += bank.questions.length;
+  }
+  // Render group cards in a fixed order
+  var groupOrder = ['数学思维', '逻辑推理', '脑筋急转弯'];
+  groupOrder.forEach(function(gName) {
+    var info = groups[gName];
+    if (!info) return; // skip if no banks in this group
+    var cfg = groupConfig[gName] || { icon: '📚', desc: '' };
+    var card = document.createElement('div');
+    card.className = 'group-card';
+    card.innerHTML = '<div class="group-icon">' + cfg.icon + '</div>' +
+      '<div class="group-name">' + gName + '</div>' +
+      '<div class="group-desc">' + cfg.desc + '</div>' +
+      '<div class="group-count">' + info.banks.length + ' 套题库 · ' + info.totalQuestions + ' 道题</div>';
+    card.addEventListener('click', (function(name) {
+      return function() { selectGroup(name); };
+    })(gName));
+    grid.appendChild(card);
+  });
+}
+
+var selectedGroup = null;
+
+function selectGroup(groupName) {
+  selectedGroup = groupName;
+  document.getElementById('groupScreen').style.display = 'none';
+  document.getElementById('selectScreen').style.display = 'flex';
+  buildSelectScreen(groupName);
+}
+
+// ===== Build Selection Screen (filtered by group) =====
+function buildSelectScreen(groupName) {
+  var grid = document.getElementById('bankGrid');
+  grid.innerHTML = '';
+  var cfg = groupConfig[groupName] || { icon: '📚' };
+  document.getElementById('selectSubtitle').textContent = cfg.icon + ' ' + groupName + ' — 请选择一套题库';
+  // Filter banks by group
+  var filteredKeys = [];
+  for (var key in allBanks) {
+    if (inferGroup(allBanks[key]) === groupName) filteredKeys.push(key);
+  }
+  filteredKeys.forEach(function(key) {
+    var bank = allBanks[key];
+    var idx = parseInt(key);
+    var card = document.createElement('div');
+    card.className = 'bank-card';
+    card.setAttribute('data-bank', key);
+    card.innerHTML = '<div class="bank-icon">' + bankIcons[idx - 1] + '</div>' +
+      '<div class="bank-name">' + bank.name + '</div>' +
+      '<div class="bank-desc">' + bank.questions.length + ' 道题 · ' + bankDescs[idx - 1] + '</div>';
+    card.addEventListener('click', (function(k) {
+      return function() { selectBank(k); };
+    })(key));
+    grid.appendChild(card);
+  });
+}
+
+function selectBank(key) {
+  selectedBankKey = key;
+  questions = allBanks[key].questions;
+  document.getElementById('selectScreen').style.display = 'none';
+  showPositionSelect(key);
+}
+
+function showPositionSelect(key) {
+  var screen = document.getElementById('positionScreen');
+  screen.style.display = 'flex';
+  document.getElementById('positionBankName').textContent = '📖 ' + allBanks[key].name;
+  var grid = document.getElementById('posGrid');
+  grid.innerHTML = '';
+  // Allow starting from step 1 to 5 (displayed as stair 1~5)
+  for (var i = 1; i <= 5; i++) {
+    var card = document.createElement('div');
+    card.className = 'pos-card' + (i === 2 ? ' recommended' : '');
+    card.innerHTML = '<div class="pos-num">' + i + '</div>' +
+      '<div class="pos-label">' + (i === 2 ? '⭐ 推荐' : '第' + i + '级') + '</div>';
+    card.addEventListener('click', (function(step) {
+      return function() { selectPosition(step); };
+    })(i));
+    grid.appendChild(card);
+  }
+}
+
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+function selectPosition(step) {
+  playerStep = step;
+  // Deep copy and shuffle questions so original bank data is untouched
+  questions = JSON.parse(JSON.stringify(allBanks[selectedBankKey].questions));
+  shuffleArray(questions);
+  document.getElementById('positionScreen').style.display = 'none';
+  document.getElementById('gameTitle').textContent = '🧠 智力大闯关 · ' + allBanks[selectedBankKey].name;
+  startGame();
+}
+
+// ===== Init Stairs =====
+function initStairs() {
+  var container = document.getElementById('stairsContainer');
+  container.innerHTML = '';
+  stairWidths = {};
+  // Stairs are numbered 0 to TOTAL_STAIRS-1 (i.e. 0 to 12)
+  for (var i = 0; i < TOTAL_STAIRS; i++) {
+    var stair = document.createElement('div');
+    stair.className = 'stair';
+    var bottomPos = SCENE_BOTTOM + i * STAIR_UNIT;
+    var width = 140 + (TOTAL_STAIRS - 1 - i) * 14;
+    stairWidths[i] = width;
+    var hue = 25 + (i + 1) * 4, sat = 45 + (i + 1) * 2, light = 32 + (i + 1) * 3;
+    stair.style.bottom = bottomPos + 'px';
+    stair.style.width = width + 'px';
+    stair.style.height = STAIR_HEIGHT + 'px';
+    stair.style.background = 'linear-gradient(135deg, hsl(' + hue + ',' + sat + '%,' + light + '%), hsl(' + hue + ',' + sat + '%,' + (light + 10) + '%))';
+    stair.style.boxShadow = '0 3px 6px rgba(0,0,0,0.25)';
+    var s = document.createElement('span');
+    s.className = 'stair-number';
+    s.textContent = i;
+    if (i === 0) s.textContent = '0 🐊';
+    stair.appendChild(s);
+    container.appendChild(stair);
+  }
+}
+
+function positionCharacter(step, animate) {
+  var c = document.getElementById('character');
+  if (!c) return;
+  var w = stairWidths[step] || 200;
+  // Place character at the bottom of the stair (not top edge), so it visually stands ON this stair
+  var b = SCENE_BOTTOM + step * STAIR_UNIT;
+  if (!animate) c.style.transition = 'none';
+  else c.style.transition = 'bottom 0.6s cubic-bezier(0.34,1.56,0.64,1), left 0.3s';
+  c.style.bottom = b + 'px';
+  c.style.left = (w / 2 + 15) + 'px';
+}
+
+function positionTrophy() {
+  var t = document.getElementById('trophy');
+  if (!t) return;
+  var topStair = TOTAL_STAIRS - 1; // stair 12
+  var w = stairWidths[topStair] || 140;
+  t.style.bottom = (SCENE_BOTTOM + topStair * STAIR_UNIT + STAIR_HEIGHT + 5) + 'px';
+  t.style.left = (w / 2 + 25) + 'px';
+}
+
+function updateWater() {
+  var water = document.getElementById('water');
+  // waterLevel represents how many stairs the water has risen (from stair 0 upwards)
+  var h = waterLevel > 0 ? (SCENE_BOTTOM + (waterLevel - 1) * STAIR_UNIT + STAIR_HEIGHT + 5) : 0;
+  water.style.height = h + 'px';
+  var croc = document.getElementById('crocodile');
+  croc.style.bottom = (h > 30 ? (h - 30) : 5) + 'px';
+  croc.style.opacity = (h > 30 || waterLevel > 0) ? '1' : '0.5';
+}
+
+function updateInfo() {
+  document.getElementById('questionNum').textContent = currentQuestion + 1;
+  document.getElementById('totalQuestions').textContent = questions.length;
+  document.getElementById('flowerCount').textContent = flowerCount;
+  document.getElementById('stepNum').textContent = playerStep;
+}
+
+function addFlower() {
+  flowerCount++;
+  var f = document.createElement('span');
+  f.className = 'flower-item';
+  f.textContent = '🌺';
+  document.getElementById('flowersDisplay').appendChild(f);
+  updateInfo();
+}
+
+function showQuestion() {
+  if (currentQuestion >= questions.length) { endGame(true); return; }
+  var q = questions[currentQuestion];
+  // Shuffle options for this question
+  var correctOption = q.options[q.answer];
+  var shuffledOptions = q.options.slice(); // shallow copy
+  shuffleArray(shuffledOptions);
+  q._shuffledOptions = shuffledOptions;
+  q._shuffledAnswer = shuffledOptions.indexOf(correctOption);
+  document.getElementById('questionHeader').textContent = '第 ' + (currentQuestion + 1) + ' 题 · ' + q.category;
+  document.getElementById('questionText').textContent = q.text;
+  var container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  var labels = ['A', 'B', 'C'];
+  for (var i = 0; i < shuffledOptions.length; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = '<span class="option-label">' + labels[i] + '.</span> ' + shuffledOptions[i];
+    btn.setAttribute('data-index', i);
+    btn.addEventListener('click', function() { selectAnswer(parseInt(this.getAttribute('data-index'))); });
+    container.appendChild(btn);
+  }
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  answered = false;
+  updateInfo();
+  // Start timer if timer mode is on
+  startTimer();
+}
+
+function selectAnswer(idx) {
+  if (answered || !gameActive) return;
+  answered = true;
+  stopTimer();
+  var q = questions[currentQuestion];
+  var buttons = document.querySelectorAll('.option-btn');
+  var feedback = document.getElementById('feedback');
+  for (var i = 0; i < buttons.length; i++) buttons[i].classList.add('disabled');
+  var shuffledAnswer = q._shuffledAnswer;
+  if (idx === shuffledAnswer) {
+    buttons[idx].classList.add('correct');
+    feedback.className = 'feedback correct';
+    feedback.innerHTML = '✅ <strong>答对了！</strong> ' + q.explanation;
+    playerStep++;
+    positionCharacter(playerStep, true);
+    updateInfo();
+    playVictorySound();
+    comboCount++;
+    if (comboCount > maxCombo) maxCombo = comboCount;
+    if (comboCount === 3) showComboToast('🔥 连对 3 题！太棒了！', 'combo3');
+    else if (comboCount === 5) { showComboToast('⚡ 连对 5 题！你是天才！', 'combo5'); playComboSound(); }
+    else if (comboCount > 5 && comboCount % 5 === 0) { showComboToast('💥 连对 ' + comboCount + ' 题！无敌了！', 'combo5'); playComboSound(); }
+    setTimeout(function() { addFlower(); }, 400);
+    if (currentQuestion === questions.length - 1) { setTimeout(function() { endGame(true); }, 1200); return; }
+  } else {
+    buttons[idx].classList.add('wrong');
+    buttons[shuffledAnswer].classList.add('correct');
+    feedback.className = 'feedback wrong';
+    feedback.innerHTML = '❌ <strong>答错了！</strong>正确答案是 ' + ['A','B','C'][shuffledAnswer] + '。' + q.explanation;
+    comboCount = 0;
+    waterLevel++;
+    updateWater();
+    playSadSound();
+    document.getElementById('gameContainer').classList.add('danger-flash');
+    setTimeout(function() { document.getElementById('gameContainer').classList.remove('danger-flash'); }, 1000);
+    if (waterLevel >= playerStep) { setTimeout(function() { gameOver(); }, 1200); return; }
+  }
+  setTimeout(function() {
+    var nb = document.getElementById('nextBtn');
+    nb.style.display = 'inline-block';
+    nb.textContent = (currentQuestion === questions.length - 1) ? '查看结果 🎉' : '下一题 ➜';
+  }, 800);
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  currentQuestion >= questions.length ? endGame(true) : showQuestion();
+}
+
+function gameOver() {
+  gameActive = false;
+  stopTimer();
+  document.getElementById('gameOverOverlay').style.display = 'flex';
+  var c = document.getElementById('character');
+  c.style.transition = 'bottom 1s, opacity 1s';
+  c.style.opacity = '0';
+  setTimeout(function() { document.getElementById('gameOverOverlay').style.display = 'none'; endGame(false); }, 2500);
+}
+
+function endGame(won) {
+  gameActive = false;
+  stopTimer();
+  var es = document.getElementById('endScreen');
+  es.style.display = 'flex';
+  es.className = won ? 'end-screen win' : 'end-screen lose';
+  document.getElementById('endTitle').textContent = won ? '🏆 恭喜通关！' : '🐊 被鳄鱼吃掉了！';
+  document.getElementById('endResultText').textContent = won
+    ? '你成功登上了第 ' + playerStep + ' 级台阶，答对了全部题目！'
+    : '你停留在第 ' + playerStep + ' 级台阶，水面淹没到了第 ' + waterLevel + ' 级...';
+  // Calculate correct count based on flowers (each correct = 1 flower)
+  var correctCount = flowerCount;
+  var totalCount = questions.length;
+  var pct = totalCount > 0 ? Math.round(correctCount / totalCount * 100) : 0;
+  // Build stats
+  var statsHtml = '<div class="stat-item"><div class="stat-val">' + correctCount + '/' + totalCount + '</div><div class="stat-label">答对题数</div></div>' +
+    '<div class="stat-item"><div class="stat-val">' + flowerCount + '</div><div class="stat-label">🌺 大红花</div></div>' +
+    '<div class="stat-item"><div class="stat-val">' + playerStep + '</div><div class="stat-label">📍 最终台阶</div></div>' +
+    '<div class="stat-item"><div class="stat-val">' + maxCombo + '</div><div class="stat-label">🔥 最大连对</div></div>';
+  document.getElementById('endStats').innerHTML = statsHtml;
+  var fs = '';
+  for (var i = 0; i < flowerCount; i++) fs += '🌺';
+  document.getElementById('endFlowers').textContent = flowerCount > 0 ? fs : '还没获得大红花 😢';
+  // Rating by percentage
+  var r;
+  if (pct === 100) r = '🏆 最强大脑';
+  else if (pct >= 80) r = '🌟 智慧之星';
+  else if (pct >= 60) r = '👍 聪明小子';
+  else if (pct >= 40) r = '💪 潜力无限';
+  else r = '🔥 再接再厉';
+  document.getElementById('endRating').textContent = r + ' (' + pct + '%)';
+  // Special badge: 100% correct + start from step 1
+  var badge = document.getElementById('specialBadge');
+  if (pct === 100 && playerStep - correctCount === 1) {
+    badge.textContent = '🎖️ 地狱难度通关！从第1级台阶起步全部答对！';
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function startGame() {
+  currentQuestion = 0; waterLevel = 0; flowerCount = 0;
+  comboCount = 0; maxCombo = 0;
+  gameActive = true; answered = false;
+  // playerStep is already set by selectPosition()
+  document.getElementById('flowersDisplay').innerHTML = '';
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('character').style.opacity = '1';
+  initStairs();
+  positionCharacter(playerStep, false);
+  positionTrophy();
+  updateWater();
+  updateInfo();
+  showQuestion();
+  animateCrocodile();
+}
+
+function backToSelect() {
+  stopTimer();
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('positionScreen').style.display = 'none';
+  document.getElementById('selectScreen').style.display = 'none';
+  document.getElementById('groupScreen').style.display = 'flex';
+}
+
+function backToGroup() {
+  document.getElementById('selectScreen').style.display = 'none';
+  document.getElementById('groupScreen').style.display = 'flex';
+}
+
+// ===== Timer Functions =====
+function startTimer() {
+  stopTimer();
+  if (!timerMode) {
+    document.getElementById('timerBarContainer').className = 'timer-bar-container';
+    document.getElementById('timerText').className = 'timer-text';
+    return;
+  }
+  timerRemaining = timerSeconds;
+  var barContainer = document.getElementById('timerBarContainer');
+  var bar = document.getElementById('timerBar');
+  var text = document.getElementById('timerText');
+  barContainer.className = 'timer-bar-container active';
+  text.className = 'timer-text active';
+  bar.style.width = '100%';
+  bar.className = 'timer-bar';
+  text.textContent = '⏱️ ' + timerRemaining + ' 秒';
+  timerInterval = setInterval(function() {
+    timerRemaining--;
+    var pct = (timerRemaining / timerSeconds) * 100;
+    bar.style.width = pct + '%';
+    text.textContent = '⏱️ ' + timerRemaining + ' 秒';
+    if (pct <= 33) { bar.className = 'timer-bar danger'; }
+    else if (pct <= 66) { bar.className = 'timer-bar warning'; }
+    else { bar.className = 'timer-bar'; }
+    if (timerRemaining <= 0) {
+      stopTimer();
+      timerTimeout();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function timerTimeout() {
+  if (answered || !gameActive) return;
+  // Auto-answer wrong: find a wrong option index
+  var q = questions[currentQuestion];
+  var wrongIdx = q._shuffledAnswer === 0 ? 1 : 0;
+  selectAnswer(wrongIdx);
+}
+
+function showComboToast(msg, cls) {
+  var existing = document.querySelector('.combo-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.className = 'combo-toast ' + cls;
+  toast.textContent = msg;
+  document.getElementById('gameContainer').appendChild(toast);
+  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 2200);
+}
+
+function playComboSound() {
+  try {
+    var ctx = getAudioCtx();
+    // Triumphant fanfare
+    var notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568]; // C5 E5 G5 C6 E6 G6
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.08 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.08);
+      osc.stop(ctx.currentTime + i * 0.08 + 0.3);
+    });
+  } catch(e) { /* ignore */ }
+}
+
+function animateCrocodile() {
+  if (crocInterval) clearInterval(crocInterval);
+  var croc = document.getElementById('crocodile');
+  var dir = 1, posX = 50;
+  crocInterval = setInterval(function() {
+    posX += dir * 0.5;
+    if (posX > 250 || posX < 20) dir *= -1;
+    croc.style.left = posX + 'px';
+  }, 50);
+}
+
+window.addEventListener('load', function() {
+  buildGroupScreen();
+  document.getElementById('selectScreen').style.display = 'none';
+  document.getElementById('restartBtn').addEventListener('click', backToSelect);
+  document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+  document.getElementById('backToGroupBtn').addEventListener('click', backToGroup);
+  // Timer toggle
+  var sw = document.getElementById('timerSwitch');
+  sw.addEventListener('click', function() {
+    timerMode = !timerMode;
+    sw.className = timerMode ? 'toggle-switch on' : 'toggle-switch';
+  });
+});
+</script>
+</body>
+</html>
