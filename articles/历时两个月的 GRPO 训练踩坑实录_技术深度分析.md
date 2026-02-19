@@ -2,7 +2,7 @@
 title: "技术深度分析：《历时两个月的 GRPO 训练踩坑实录：63% → 96% tool selection》"
 date: 2026-02-19
 layout: article
-description: "---"
+description: "历时两个月的 GRPO 训练踩坑实录，从 63% 到 96% tool selection 的完整实践分享"
 ---
 
 # 技术深度分析：《历时两个月的 GRPO 训练踩坑实录：63% → 96% tool selection》
