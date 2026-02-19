@@ -92,21 +92,21 @@
   }
   .group-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    max-width: 700px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    max-width: 860px;
   }
   .group-card {
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(10px);
     border: 2px solid rgba(255,255,255,0.3);
     border-radius: 20px;
-    padding: 32px 24px;
+    padding: 24px 16px;
     cursor: pointer;
     transition: all 0.3s;
     text-align: center;
     color: #fff;
-    min-width: 190px;
+    min-width: 160px;
   }
   .group-card:hover {
     background: rgba(255,255,255,0.3);
@@ -429,6 +429,36 @@
 <script src="questions/bank28.js"></script>
 <script src="questions/bank29.js"></script>
 <script src="questions/bank30.js"></script>
+<script src="questions/bank31.js"></script>
+<script src="questions/bank32.js"></script>
+<script src="questions/bank33.js"></script>
+<script src="questions/bank34.js"></script>
+<script src="questions/bank35.js"></script>
+<script src="questions/bank36.js"></script>
+<script src="questions/bank37.js"></script>
+<script src="questions/bank38.js"></script>
+<script src="questions/bank39.js"></script>
+<script src="questions/bank40.js"></script>
+<script src="questions/bank41.js"></script>
+<script src="questions/bank42.js"></script>
+<script src="questions/bank43.js"></script>
+<script src="questions/bank44.js"></script>
+<script src="questions/bank45.js"></script>
+<script src="questions/bank46.js"></script>
+<script src="questions/bank47.js"></script>
+<script src="questions/bank48.js"></script>
+<script src="questions/bank49.js"></script>
+<script src="questions/bank50.js"></script>
+<script src="questions/bank51.js"></script>
+<script src="questions/bank52.js"></script>
+<script src="questions/bank53.js"></script>
+<script src="questions/bank54.js"></script>
+<script src="questions/bank55.js"></script>
+<script src="questions/bank56.js"></script>
+<script src="questions/bank57.js"></script>
+<script src="questions/bank58.js"></script>
+<script src="questions/bank59.js"></script>
+<script src="questions/bank60.js"></script>
 <script>
 // ===== All Question Banks (loaded from external .js files) =====
 var allBanks = window.questionBanks;
@@ -546,7 +576,8 @@ function playSadSound() {
 var groupConfig = {
   '数学思维': { icon: '🔢', desc: '计算题、数列规律、几何思维、概率统计等' },
   '逻辑推理': { icon: '🧩', desc: '条件推理、排列组合、策略博弈等' },
-  '脑筋急转弯': { icon: '🤪', desc: '趣味谜题、文字陷阱、脑洞题等' }
+  '脑筋急转弯': { icon: '🤪', desc: '趣味谜题、文字陷阱、脑洞题等' },
+  '知识问答': { icon: '📖', desc: '天文地理、自然科学、历史文化、生活百科等' }
 };
 
 // Helper: infer group for a bank based on most frequent category
@@ -576,7 +607,7 @@ function buildGroupScreen() {
     groups[g].totalQuestions += bank.questions.length;
   }
   // Render group cards in a fixed order
-  var groupOrder = ['数学思维', '逻辑推理', '脑筋急转弯'];
+  var groupOrder = ['数学思维', '逻辑推理', '脑筋急转弯', '知识问答'];
   groupOrder.forEach(function(gName) {
     var info = groups[gName];
     if (!info) return; // skip if no banks in this group
