@@ -92,9 +92,9 @@
   }
   .group-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 24px;
-    max-width: 700px;
+    max-width: 900px;
   }
   .group-card {
     background: rgba(255,255,255,0.15);
@@ -584,7 +584,8 @@ function playSadSound() {
 var groupConfig = {
   '数学思维': { icon: '🔢', desc: '计算题、数列规律、几何思维、概率统计等' },
   '逻辑推理': { icon: '🧩', desc: '条件推理、排列组合、策略博弈等' },
-  '脑筋急转弯': { icon: '🤪', desc: '趣味谜题、文字陷阱、脑洞题等' }
+  '脑筋急转弯': { icon: '🤪', desc: '趣味谜题、文字陷阱、脑洞题等' },
+  '知识问答': { icon: '📖', desc: '天文地理、自然科学、历史文化、生活百科等' }
 };
 
 // Helper: infer group for a bank based on most frequent category
@@ -614,7 +615,7 @@ function buildGroupScreen() {
     groups[g].totalQuestions += bank.questions.length;
   }
   // Render group cards in a fixed order
-  var groupOrder = ['数学思维', '逻辑推理', '脑筋急转弯'];
+  var groupOrder = ['数学思维', '逻辑推理', '脑筋急转弯', '知识问答'];
   groupOrder.forEach(function(gName) {
     var info = groups[gName];
     if (!info) return; // skip if no banks in this group
