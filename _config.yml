@@ -1,0 +1,29 @@
+# Jekyll Configuration for ZZBased GitHub Pages
+title: "ZZBased | AI/ML 研究与探索"
+description: "追踪前沿 AI 研究，记录技术思考，分享开源项目"
+url: "https://zzbased2.github.io"
+baseurl: ""
+
+# Markdown rendering
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# Default front matter for articles
+defaults:
+  - scope:
+      path: "articles"
+      type: "pages"
+    values:
+      layout: "article"
+
+# Exclude files from build
+exclude:
+  - README.md
+  - "*.py"
+  - "*.sh"
+  - node_modules
+  - Gemfile
+  - Gemfile.lock
