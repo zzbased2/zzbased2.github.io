@@ -220,10 +220,30 @@
     </header>
 
     <main class="main-content">
-        <div class="empty-state">
-            <div class="empty-state-icon">📝</div>
-            <h2>文章正在整理中</h2>
-            <p>技术博文、论文深度解读、学习笔记等内容即将上线，敬请期待！</p>
+        <div style="background:white; border-radius:16px; box-shadow:var(--card-shadow); overflow:hidden; margin-bottom:30px;">
+            <div style="padding:30px; border-bottom:1px solid #f0f0f0;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                    <span style="font-size:2.5rem;">📚</span>
+                    <div>
+                        <h2 style="font-size:1.4rem; color:var(--text-dark);">知乎阅读笔记</h2>
+                        <p style="color:var(--text-light); font-size:0.9rem; margin-top:4px;">114 篇知乎文章的深度阅读、核心观点提取与批判性分析</p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:18px;">
+                    <span style="background:#e6fff9; color:#00b894; padding:4px 12px; border-radius:10px; font-size:0.82rem;">🔬 技术 ~60%</span>
+                    <span style="background:#f3e5f5; color:#6c5ce7; padding:4px 12px; border-radius:10px; font-size:0.82rem;">🌍 时事 ~20%</span>
+                    <span style="background:#fff3e0; color:#e17055; padding:4px 12px; border-radius:10px; font-size:0.82rem;">💭 生活 ~20%</span>
+                </div>
+                <p style="color:#444; font-size:0.92rem; line-height:1.7;">
+                    覆盖 LLM + 推荐系统、GRPO/RL 训练实战、Agent 架构、生成式推荐、多模态等技术方向，
+                    以及时事评论和生活感悟。每篇文章均包含核心观点提取、认可分析和批判性思考。
+                </p>
+            </div>
+            <div style="padding:20px 30px;">
+                <a href="zhihu_reading_notes.html" style="display:inline-flex; align-items:center; gap:8px; color:var(--article-color); text-decoration:none; font-weight:600; font-size:1rem; padding:10px 24px; border-radius:25px; transition:all 0.3s; background:rgba(225,112,85,0.08);">
+                    📖 阅读完整报告 →
+                </a>
+            </div>
         </div>
     </main>
 
