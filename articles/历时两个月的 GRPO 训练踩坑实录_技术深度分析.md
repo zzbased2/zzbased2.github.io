@@ -1,3 +1,10 @@
+---
+title: "技术深度分析：《历时两个月的 GRPO 训练踩坑实录：63% → 96% tool selection》"
+date: 2026-02-19
+layout: article
+description: "---"
+---
+
 # 技术深度分析：《历时两个月的 GRPO 训练踩坑实录：63% → 96% tool selection》
 
 > **原文来源**：[知乎专栏 - LLMCat](https://zhuanlan.zhihu.com/p/2005390937266857291)
