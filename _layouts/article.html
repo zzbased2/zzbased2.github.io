@@ -311,6 +311,21 @@
             .article-body { padding: 25px 20px; }
         }
     </style>
+    <!-- MathJax for LaTeX formula rendering -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+        displayMath: [['$$$', '$$$'], ['\\[', '\\]']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+    </script>
+    <script type="text/javascript" async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js">
+    </script>
 </head>
 <body>
     <!-- Navigation -->

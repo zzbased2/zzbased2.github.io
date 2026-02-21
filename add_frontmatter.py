@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Auto Front Matter Script for ZZBased GitHub Pages
+Auto Front Matter & Math Fix Script for ZZBased GitHub Pages
 
 Usage:
     Copy your .md file into the articles/ directory, then run:
         python3 add_frontmatter.py
 
-    It will automatically add Jekyll front matter to any .md file
-    that doesn't already have one.
+    It will automatically:
+    1. Add Jekyll front matter to any .md file that doesn't already have one.
+    2. Fix inline math: replace single $...$ with $$...$$ for kramdown + MathJax.
 
 What it does:
     - Scans articles/ for .md files without front matter (no "---" at line 1)
@@ -62,6 +63,51 @@ def extract_description(content, max_len=120):
     return ""
 
 
+def fix_inline_math(filepath):
+    """Fix inline math: replace $...$ with $$...$$ (skip code blocks and standalone $$ lines)."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    lines = content.split('\n')
+    result_lines = []
+    in_code_block = False
+
+    for line in lines:
+        # Track code blocks (```)
+        if line.strip().startswith('```'):
+            in_code_block = not in_code_block
+            result_lines.append(line)
+            continue
+
+        if in_code_block:
+            result_lines.append(line)
+            continue
+
+        # Skip lines that are pure block math (standalone $$ lines)
+        stripped = line.strip()
+        if stripped == '$$':
+            result_lines.append(line)
+            continue
+
+        # Process inline math: replace $...$ with $$...$$
+        # Step 1: Protect existing $$ pairs
+        placeholder = '\x00DOUBLE\x00'
+        protected = line.replace('$$', placeholder)
+
+        # Step 2: Replace single $...$ with $$...$$
+        protected = re.sub(r'\$([^\$\n]+?)\$', r'$$\1$$', protected)
+
+        # Step 3: Restore protected $$
+        protected = protected.replace(placeholder, '$$')
+
+        result_lines.append(protected)
+
+    new_content = '\n'.join(result_lines)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(new_content)
+
+
 def generate_front_matter(filepath, content):
     """Generate Jekyll front matter for a markdown file."""
     # Title: from first heading or filename
@@ -94,19 +140,23 @@ def generate_front_matter(filepath, content):
 
 
 def process_file(filepath):
-    """Add front matter to a file if it doesn't have one."""
-    if has_front_matter(filepath):
-        return False
+    """Add front matter to a file if it doesn't have one, and fix inline math."""
+    added_fm = False
+    if not has_front_matter(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
+        front_matter = generate_front_matter(filepath, content)
 
-    front_matter = generate_front_matter(filepath, content)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(front_matter + "\n" + content)
 
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(front_matter + "\n" + content)
+        added_fm = True
 
-    return True
+    # Always fix inline math (regardless of front matter status)
+    fix_inline_math(filepath)
+
+    return added_fm
 
 
 def main():
@@ -127,10 +177,10 @@ def main():
     for filename in sorted(md_files):
         filepath = os.path.join(ARTICLES_DIR, filename)
         if process_file(filepath):
-            print(f"✅ Added front matter: {filename}")
+            print(f"✅ Added front matter + fixed math: {filename}")
             updated += 1
         else:
-            print(f"⏭️  Already has front matter: {filename}")
+            print(f"⏭️  Already has front matter, fixed math: {filename}")
             skipped += 1
 
     print(f"\nDone! Updated: {updated}, Skipped: {skipped}")
