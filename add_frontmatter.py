@@ -47,9 +47,11 @@ def extract_description(content, max_len=120):
     para_lines = []
     for line in lines:
         stripped = line.strip()
-        # Skip headings, blank lines, blockquotes, images, html tags
+        # Skip headings, blank lines, blockquotes, images, html tags, and hr/separators
         if not stripped or stripped.startswith("#") or stripped.startswith(">") \
-                or stripped.startswith("![") or stripped.startswith("<"):
+                or stripped.startswith("![") or stripped.startswith("<") \
+                or re.match(r'^-{3,}$', stripped) or re.match(r'^\*{3,}$', stripped) \
+                or re.match(r'^_{3,}$', stripped):
             if para_lines:
                 break
             continue
@@ -130,10 +132,12 @@ def generate_front_matter(filepath, content):
         f"date: {date_str}",
         "layout: article",
     ]
-    if description:
-        # Escape quotes in description
-        description = description.replace('"', '\\"')
-        fm_lines.append(f'description: "{description}"')
+    if not description:
+        # Fallback: use title as description
+        description = title
+    # Escape quotes in description
+    description = description.replace('"', '\\"')
+    fm_lines.append(f'description: "{description}"')
     fm_lines.append("---")
 
     return "\n".join(fm_lines) + "\n"
