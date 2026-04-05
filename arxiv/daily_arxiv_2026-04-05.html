@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily arXiv - Paper Tracking (2026-04-05)</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ==================== 全局样式 ==================== */
+:root {
+    /* 主题色 */
+    --primary-color: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #818cf8;
+    --secondary-color: #06b6d4;
+    --accent-color: #f43f5e;
+    
+    /* 背景色 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-dark: #1e293b;
+    
+    /* 文本色 */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --text-inverse: #ffffff;
+    
+    /* 边框色 */
+    --border-color: #e2e8f0;
+    --border-dark: #cbd5e1;
+    
+    /* 阴影 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    /* 圆角 */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    
+    /* 动画 */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 暗色主题 */
+[data-theme="dark"] {
+    --bg-primary: #1e293b;
+    --bg-secondary: #0f172a;
+    --bg-tertiary: #334155;
+    --bg-dark: #0f172a;
+    
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #64748b;
+    
+    --border-color: #334155;
+    --border-dark: #475569;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* ==================== 顶部导航栏 ==================== */
+.top-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] .top-navbar {
+    background-color: rgba(30, 41, 59, 0.95);
+}
+
+.navbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    max-width: 1920px;
+    margin: 0 auto;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.navbar-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+}
+
+.brand-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-text p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+}
+
+.btn-icon:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+/* ==================== 主容器布局 ==================== */
+.main-wrapper {
+    display: flex;
+    max-width: 1920px;
+    margin: 0 auto;
+    min-height: calc(100vh - 73px);
+}
+
+/* ==================== 侧边栏 ==================== */
+.sidebar {
+    width: 320px;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+    position: sticky;
+    top: 73px;
+    height: calc(100vh - 73px);
+    transition: var(--transition);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.sidebar-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.sidebar-toggle {
+    display: none;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    font-weight: 500;
+}
+
+.nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+.nav-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.nav-item i {
+    font-size: 1.125rem;
+    width: 20px;
+}
+
+/* ==================== 日历组件 ==================== */
+.calendar-widget {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.calendar-header h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.calendar-day:hover {
+    background: var(--bg-tertiary);
+}
+
+.calendar-day.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.calendar-day.has-data {
+    position: relative;
+    font-weight: 600;
+}
+
+.calendar-day.has-data::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--secondary-color);
+}
+
+/* ==================== 类别筛选 ==================== */
+.category-filter {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.category-filter h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.category-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.category-item.active {
+    background: var(--primary-light);
+    color: white;
+}
+
+.category-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.category-count {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+/* ==================== 主内容区 ==================== */
+.main-content {
+    flex: 1;
+    padding: 2rem;
+    min-width: 0;
+}
+
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 999;
+    transition: var(--transition);
+}
+
+.mobile-menu-btn:hover {
+    transform: scale(1.1);
+}
+
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-header {
+    margin-bottom: 2rem;
+}
+
+.section-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.section-desc {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* ==================== 统计卡片 ==================== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.stat-card.gradient-purple {
+    --gradient-start: #8b5cf6;
+    --gradient-end: #a78bfa;
+}
+
+.stat-card.gradient-blue {
+    --gradient-start: #3b82f6;
+    --gradient-end: #60a5fa;
+}
+
+.stat-card.gradient-green {
+    --gradient-start: #10b981;
+    --gradient-end: #34d399;
+}
+
+.stat-card.gradient-orange {
+    --gradient-start: #f59e0b;
+    --gradient-end: #fbbf24;
+}
+
+.stat-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.75rem;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* ==================== 内容卡片 ==================== */
+.content-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.content-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header-left i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.header-left h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.update-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.btn-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition-fast);
+}
+
+.btn-link:hover {
+    color: var(--primary-dark);
+    gap: 0.75rem;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* ==================== 词云图 ==================== */
+.wordcloud-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+}
+
+.wordcloud-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+}
+
+/* ==================== 论文卡片 ==================== */
+.papers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.paper-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--primary-color);
+    transition: var(--transition);
+}
+
+.paper-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+    border-left-color: var(--accent-color);
+}
+
+.paper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.paper-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+}
+
+.paper-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.paper-title a:hover {
+    color: var(--primary-color);
+}
+
+.paper-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.paper-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.paper-authors {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.paper-abstract {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.paper-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.category-badge {
+    padding: 0.375rem 0.875rem;
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.category-badge:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.paper-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-paper {
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-dark);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ==================== 搜索和过滤 ==================== */
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1.25rem;
+    max-width: 500px;
+    margin-top: 1rem;
+    transition: var(--transition-fast);
+}
+
+.search-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.search-box i {
+    color: var(--text-tertiary);
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background: var(--bg-primary);
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.filter-select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* ==================== 分析内容 ==================== */
+.analysis-content {
+    line-height: 1.8;
+    color: var(--text-primary);
+}
+
+.analysis-content h2,
+.analysis-content h3,
+.analysis-content h4 {
+    color: var(--text-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.analysis-content h2 {
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+.analysis-content h3 {
+    font-size: 1.25rem;
+}
+
+.analysis-content h4 {
+    font-size: 1.125rem;
+}
+
+.analysis-content p {
+    margin-bottom: 1rem;
+}
+
+.analysis-content ul,
+.analysis-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.analysis-content li {
+    margin-bottom: 0.5rem;
+}
+
+.analysis-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.analysis-content table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.875rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.analysis-content table td {
+    padding: 0.875rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.analysis-content table tr:last-child td {
+    border-bottom: none;
+}
+
+.analysis-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.analysis-content code {
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875em;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.analysis-content pre {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+/* ==================== 分页 ==================== */
+.pagination-nav {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.pagination {
+    display: flex;
+    list-style: none;
+    gap: 0.5rem;
+}
+
+.page-item {
+    display: flex;
+}
+
+.page-link {
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    cursor: pointer;
+}
+
+.page-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.page-item.disabled .page-link {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==================== 加载动画 ==================== */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+}
+
+.loading p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.loading-small {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.spinner-small {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== 回到顶部按钮 ==================== */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    transition: var(--transition);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-to-top:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* ==================== Footer ==================== */
+.footer {
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 280px;
+    }
+    
+    .main-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        position: fixed;
+        left: -320px;
+        z-index: 1001;
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .sidebar-toggle {
+        display: block;
+    }
+    
+    .mobile-menu-btn {
+        display: flex;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .navbar-content {
+        padding: 1rem 1.5rem;
+    }
+    
+    .brand-text h1 {
+        font-size: 1.25rem;
+    }
+    
+    .brand-text p {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .section-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .search-box {
+        max-width: 100%;
+    }
+    
+    .filter-bar {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-select {
+        width: 100%;
+    }
+    
+    .paper-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .paper-actions {
+        flex-direction: column;
+    }
+    
+    .btn-paper {
+        justify-content: center;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .navbar-actions {
+        gap: 0.25rem;
+    }
+    
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-content {
+        padding: 0.875rem 1rem;
+    }
+    
+    .brand-text h1 {
+        font-size: 1.125rem;
+    }
+    
+    .navbar-logo {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+    }
+}
+
+/* ==================== 滚动条样式 ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-dark);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* ==================== 工具类 ==================== */
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.badge-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.badge-success {
+    background: #10b981;
+    color: white;
+}
+
+.badge-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.badge-danger {
+    background: var(--accent-color);
+    color: white;
+}
+
+        
+        /* Override original CSS hidden styles - offline version needs to show all content */
+        .content-section {
+            display: block !important;
+        }
+        
+        /* Layout styles */
+        body {
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 700;
+        }
+        
+        .sidebar-header p {
+            font-size: 0.85rem;
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+        
+        .nav-domain {
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-domain-title {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .nav-domain-title:hover {
+            background: var(--bg-hover);
+        }
+        
+        .nav-domain-title i.fa-folder {
+            color: var(--accent-color);
+        }
+        
+        .nav-domain-title span {
+            flex: 1;
+        }
+        
+        .nav-chevron {
+            transition: transform 0.3s;
+            font-size: 0.75rem;
+        }
+        
+        .nav-domain.expanded .nav-chevron {
+            transform: rotate(180deg);
+        }
+        
+        .nav-sections {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .nav-domain.expanded .nav-sections {
+            max-height: 500px;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem 0.5rem 3rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background: var(--bg-hover);
+            color: var(--accent-color);
+        }
+        
+        .nav-link.active {
+            background: var(--bg-hover);
+            color: var(--accent-color);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            background: var(--bg-primary);
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        .toolbar-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .toolbar-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-icon {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-icon:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
+        .offline-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        /* Domain section */
+        .domain-section {
+            margin-bottom: 3rem;
+        }
+        
+        .domain-header {
+            background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .domain-header h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        
+        .domain-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            opacity: 0.95;
+        }
+        
+        .domain-stats span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Content section */
+        .content-section {
+            margin-bottom: 2rem;
+            scroll-margin-top: 2rem;
+            display: block !important;
+        }
+        
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .back-link {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-color);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: block !important;
+            }
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+        }
+        
+        /* Back to top button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .back-to-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+    
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-book-open"></i> Daily arXiv</h1>
+            <p>📅 2026-04-05 | 📊 0 papers</p>
+        </div>
+        <nav class="sidebar-nav">
+            
+        <div class="nav-domain">
+            <div class="nav-domain-title" onclick="toggleDomain('recommendation')">
+                <i class="fas fa-folder"></i>
+                <span>Recommendation</span>
+                <i class="fas fa-chevron-down nav-chevron"></i>
+            </div>
+            <div class="nav-sections" id="nav-recommendation">
+                <a href="#papers-recommendation" class="nav-link">
+                    <i class="fas fa-file-alt"></i> Papers (0)
+                </a>
+                <a href="#analysis-recommendation" class="nav-link">
+                    <i class="fas fa-chart-line"></i> Analysis & Trends
+                </a>
+            </div>
+        </div>
+    
+
+        <div class="nav-domain">
+            <div class="nav-domain-title" onclick="toggleDomain('llm_agent')">
+                <i class="fas fa-folder"></i>
+                <span>LLM Agent</span>
+                <i class="fas fa-chevron-down nav-chevron"></i>
+            </div>
+            <div class="nav-sections" id="nav-llm_agent">
+                <a href="#papers-llm_agent" class="nav-link">
+                    <i class="fas fa-file-alt"></i> Papers (0)
+                </a>
+                <a href="#analysis-llm_agent" class="nav-link">
+                    <i class="fas fa-chart-line"></i> Analysis & Trends
+                </a>
+            </div>
+        </div>
+    
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-info">
+                <button class="btn-icon mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="offline-badge">
+                    <i class="fas fa-file-download"></i> Offline
+                </span>
+                <span>
+                    <i class="fas fa-calendar"></i>
+                    2026-04-05
+                </span>
+                <span>
+                    <i class="fas fa-file-alt"></i>
+                    0 papers
+                </span>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Content Container -->
+        <div id="content-container">
+            
+        <!-- Recommendation -->
+        <div class="domain-section" id="domain-recommendation">
+            <div class="domain-header">
+                <h2><i class="fas fa-graduation-cap"></i> Recommendation</h2>
+                <div class="domain-stats">
+                    <span><i class="fas fa-file-alt"></i> 0 papers</span>
+                    <span><i class="fas fa-calendar"></i> 2026-04-05</span>
+                </div>
+            </div>
+            
+            <!-- Papers List -->
+            <div class="content-section" id="papers-recommendation">
+                <h3 class="section-title">
+                    <i class="fas fa-file-alt"></i> Papers (0)
+                    <a href="#domain-recommendation" class="back-link"><i class="fas fa-arrow-up"></i> Back to top</a>
+                </h3>
+                <div id="papers-list-recommendation"></div>
+            </div>
+            
+            <!-- Analysis & Trends -->
+            <div class="content-section" id="analysis-recommendation">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line"></i> Analysis & Trends
+                    <a href="#domain-recommendation" class="back-link"><i class="fas fa-arrow-up"></i> Back to top</a>
+                </h3>
+                <div class="content-card">
+                    <div class="report-content">
+                        <div class="empty-state"><i class="fas fa-file-waveform"></i><p>No analysis report</p></div>
+                        
+                    </div>
+                </div>
+                <div id="analysis-content-recommendation"></div>
+            </div>
+        </div>
+    
+
+        <!-- LLM Agent -->
+        <div class="domain-section" id="domain-llm_agent">
+            <div class="domain-header">
+                <h2><i class="fas fa-graduation-cap"></i> LLM Agent</h2>
+                <div class="domain-stats">
+                    <span><i class="fas fa-file-alt"></i> 0 papers</span>
+                    <span><i class="fas fa-calendar"></i> 2026-04-05</span>
+                </div>
+            </div>
+            
+            <!-- Papers List -->
+            <div class="content-section" id="papers-llm_agent">
+                <h3 class="section-title">
+                    <i class="fas fa-file-alt"></i> Papers (0)
+                    <a href="#domain-llm_agent" class="back-link"><i class="fas fa-arrow-up"></i> Back to top</a>
+                </h3>
+                <div id="papers-list-llm_agent"></div>
+            </div>
+            
+            <!-- Analysis & Trends -->
+            <div class="content-section" id="analysis-llm_agent">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line"></i> Analysis & Trends
+                    <a href="#domain-llm_agent" class="back-link"><i class="fas fa-arrow-up"></i> Back to top</a>
+                </h3>
+                <div class="content-card">
+                    <div class="report-content">
+                        <div class="empty-state"><i class="fas fa-file-waveform"></i><p>No analysis report</p></div>
+                        
+                    </div>
+                </div>
+                <div id="analysis-content-llm_agent"></div>
+            </div>
+        </div>
+    
+        </div>
+    </main>
+    
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Embedded Data -->
+    <script>
+        const ALL_DOMAINS_DATA = [{"domain_id": "recommendation", "domain_name": "Recommendation", "date": "2026-04-05", "papers": [], "summaries": [], "summary_report": null, "summary_report_raw": null, "analysis": null, "analysis_report": null, "analysis_report_raw": null, "wordcloud_base64": null}, {"domain_id": "llm_agent", "domain_name": "LLM Agent", "date": "2026-04-05", "papers": [], "summaries": [], "summary_report": null, "summary_report_raw": null, "analysis": null, "analysis_report": null, "analysis_report_raw": null, "wordcloud_base64": null}];
+    </script>
+    
+    <!-- Custom JS -->
+    <script>
+        
+        // ==================== Theme Toggle ====================
+        let theme = localStorage.getItem('theme') || 'light';
+        
+        function initTheme() {
+            document.documentElement.setAttribute('data-theme', theme);
+            const icon = document.querySelector('#theme-toggle i');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+        
+        function toggleTheme() {
+            theme = theme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+            initTheme();
+        }
+        
+        // ==================== Sidebar ====================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+        
+        function toggleDomain(domainId) {
+            const navDomain = event.currentTarget.parentElement;
+            navDomain.classList.toggle('expanded');
+        }
+        
+        // Smooth scroll to target
+        function smoothScrollTo(targetId) {
+            const target = document.querySelector(targetId);
+            if (target) {
+                const offsetTop = target.offsetTop - 20;
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        
+        // ==================== Render Papers ====================
+        function renderPapers(domainId, papers) {
+            const container = document.getElementById(`papers-list-${domainId}`);
+            
+            if (!papers || !papers.length) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><p>No papers available</p></div>';
+                return;
+            }
+            
+            container.innerHTML = papers.map((paper, index) => {
+                // Star rating display
+                const starRating = paper.star_rating || 3;
+                const starsHtml = '⭐'.repeat(starRating);
+                
+                // Source type and affiliations
+                const sourceType = paper.source_type || '';
+                const allAffiliations = paper.all_affiliations || [];
+                let sourceHtml = '';
+                if (sourceType || allAffiliations.length > 0) {
+                    const affsStr = allAffiliations.length > 0 
+                        ? allAffiliations.join(', ') 
+                        : (paper.affiliation_name || '');
+                    sourceHtml = `
+                        <div style="margin-bottom: 0.75rem; font-size: 0.9rem;">
+                            <span style="background: #f0f4ff; color: #4a5568; padding: 0.3rem 0.6rem; border-radius: 6px; font-weight: 500;">
+                                🏷️ ${escapeHtml(sourceType)}${affsStr ? ' | ' + escapeHtml(affsStr) : ''}
+                            </span>
+                        </div>
+                    `;
+                }
+                
+                // Recommendation reason and rating reason from LLM
+                const structured = paper.summary_structured || {};
+                let recReasonHtml = '';
+                if (structured.recommendation_reason && structured.recommendation_reason !== '未提供' && structured.recommendation_reason !== '解析失败') {
+                    recReasonHtml = `
+                        <div style="margin-bottom: 0.5rem; padding: 0.6rem 0.8rem; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-left: 3px solid #22c55e; border-radius: 0 8px 8px 0; font-size: 0.9rem;">
+                            <strong>🎯 推荐理由：</strong>${escapeHtml(structured.recommendation_reason)}
+                        </div>
+                    `;
+                }
+                let ratingReasonHtml = '';
+                if (structured.rating_reason && structured.rating_reason !== '未提供' && structured.rating_reason !== '解析失败') {
+                    ratingReasonHtml = `
+                        <div style="margin-bottom: 0.5rem; padding: 0.6rem 0.8rem; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: var(--text-secondary);">
+                            <strong>📊 评分理由：</strong>${escapeHtml(structured.rating_reason)}
+                        </div>
+                    `;
+                }
+                
+                // Score details (collapsible)
+                let scoreDetails = '';
+                if (paper.combined_score !== undefined) {
+                    const keywordScore = paper.relevance_score || 0;
+                    const affiliationScore = paper.affiliation_score || 0;
+                    const conferenceScore = paper.conference_score || 0;
+                    const combinedScore = paper.combined_score || 0;
+                    
+                    const matchedKeywords = paper.matched_keywords || [];
+                    const keywordDetail = matchedKeywords.length > 0 
+                        ? `Matched: ${matchedKeywords.join(', ')}` 
+                        : 'No keyword match';
+                    
+                    const affiliationDetail = paper.affiliation_name 
+                        ? `Institution: ${paper.affiliation_name}` 
+                        : 'Unknown institution';
+                    
+                    const conferenceDetail = paper.conference_name 
+                        ? `Conference: ${paper.conference_name}` 
+                        : 'Non-top conference';
+                    
+                    scoreDetails = `
+                        <div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-primary); border-radius: 8px; font-size: 0.85rem;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong style="color: var(--accent-color);">📊 Score: ${combinedScore.toFixed(2)}</strong>
+                                <span style="color: var(--text-secondary); margin-left: 0.5rem;">(0.5×keyword + 0.35×affiliation + 0.15×conference)</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; color: var(--text-secondary);">
+                                <div>
+                                    <strong>🔑 Keyword:</strong> ${keywordScore.toFixed(1)}<br>
+                                    <small style="color: var(--text-secondary);">${keywordDetail}</small>
+                                </div>
+                                <div>
+                                    <strong>🏢 Affiliation:</strong> ${affiliationScore.toFixed(1)}<br>
+                                    <small style="color: var(--text-secondary);">${affiliationDetail}</small>
+                                </div>
+                                <div>
+                                    <strong>🎓 Conference:</strong> ${conferenceScore.toFixed(1)}<br>
+                                    <small style="color: var(--text-secondary);">${conferenceDetail}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="paper-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; flex: 1;">
+                                <a href="${paper.entry_url}" target="_blank" style="color: var(--accent-color); text-decoration: none;">
+                                    ${index + 1}. ${escapeHtml(paper.title)}
+                                </a>
+                            </h4>
+                            ${paper.combined_score ? `<span style="background: linear-gradient(135deg, var(--accent-color), #8b5cf6); color: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-left: 1rem; white-space: nowrap;">${starsHtml} ${starRating}/5</span>` : ''}
+                        </div>
+                        ${sourceHtml}
+                        ${recReasonHtml}
+                        ${ratingReasonHtml}
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.75rem;">
+                            <i class="fas fa-users"></i> ${paper.authors ? paper.authors.slice(0, 5).join(', ') : 'Unknown'}
+                            ${paper.authors && paper.authors.length > 5 ? ' et al.' : ''}
+                        </p>
+                        ${(() => {
+                            // Show structured summary if available, otherwise show abstract
+                            const s = paper.summary_structured || {};
+                            const hasSummary = s.one_line_summary || s.problem || s.method || s.contribution;
+                            if (hasSummary) {
+                                let summaryHtml = '<div style="margin-bottom: 0.75rem; padding: 0.8rem; background: var(--bg-primary); border-radius: 8px; line-height: 1.7; font-size: 0.9rem;">';
+                                summaryHtml += '<strong>📝 摘要：</strong><br>';
+                                if (s.one_line_summary && s.one_line_summary !== '未提供' && s.one_line_summary !== '解析失败') {
+                                    summaryHtml += `<strong>核心贡献：</strong>${escapeHtml(s.one_line_summary)}<br>`;
+                                }
+                                if (s.problem && s.problem !== '未提供' && s.problem !== '解析失败') {
+                                    summaryHtml += `<strong>研究问题：</strong>${escapeHtml(s.problem)}<br>`;
+                                }
+                                if (s.method && s.method !== '未提供' && s.method !== '解析失败') {
+                                    summaryHtml += `<strong>核心方法：</strong>${escapeHtml(s.method)}<br>`;
+                                }
+                                if (s.contribution && s.contribution !== '未提供' && s.contribution !== '解析失败') {
+                                    summaryHtml += `<strong>主要创新：</strong>${escapeHtml(s.contribution)}<br>`;
+                                }
+                                if (s.keywords) {
+                                    const kws = Array.isArray(s.keywords) ? s.keywords.join(', ') : s.keywords;
+                                    if (kws !== '未提供' && kws !== '解析失败') {
+                                        summaryHtml += `<strong>关键词：</strong>${escapeHtml(kws)}`;
+                                    }
+                                }
+                                summaryHtml += '</div>';
+                                return summaryHtml;
+                            } else {
+                                return `<p style="color: var(--text-primary); line-height: 1.6; margin-bottom: 0.75rem;">${escapeHtml(paper.abstract ? paper.abstract.substring(0, 400) + '...' : '')}</p>`;
+                            }
+                        })()}
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                            ${(paper.categories || []).map(cat => 
+                                `<span style="background: var(--bg-primary); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; border: 1px solid var(--border-color);">${escapeHtml(cat)}</span>`
+                            ).join('')}
+                        </div>
+                        ${scoreDetails}
+                        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+                            <a href="${paper.pdf_url || paper.entry_url}" target="_blank" 
+                               style="color: var(--accent-color); text-decoration: none; font-size: 0.9rem;">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                            <a href="${paper.entry_url}" target="_blank" 
+                               style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">
+                                <i class="fas fa-external-link-alt"></i> arXiv
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ==================== Render Analysis ====================
+        function renderAnalysis(domainId, analysis, hasAnalysisReport) {
+            const container = document.getElementById(`analysis-content-${domainId}`);
+            
+            // If analysis_report is already rendered in the HTML (from server-side),
+            // only render supplementary data that's not already in the report
+            if (hasAnalysisReport) {
+                // Analysis report already contains the full analysis, no need to duplicate
+                if (container) container.innerHTML = '';
+                return;
+            }
+            
+            if (!analysis) {
+                if (container) container.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>No analysis data</p></div>';
+                return;
+            }
+            
+            const llm = analysis.llm_analysis || {};
+            
+            container.innerHTML = `
+                <!-- Keywords stats -->
+                <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fas fa-tags"></i> Keywords</h4>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        ${(analysis.keywords || []).slice(0, 20).map(kw => `
+                            <span style="background: linear-gradient(135deg, var(--accent-color), #8b5cf6); color: white; 
+                                         padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem;">
+                                ${escapeHtml(kw.keyword || kw)} 
+                                ${kw.count ? `<small>(${kw.count})</small>` : ''}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${llm.hotspots_html ? `
+                <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fas fa-fire"></i> Research Hotspots</h4>
+                    <div class="report-content">${llm.hotspots_html}</div>
+                </div>
+                ` : ''}
+                
+                ${llm.trends_html ? `
+                <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fas fa-arrow-trend-up"></i> Technology Trends</h4>
+                    <div class="report-content">${llm.trends_html}</div>
+                </div>
+                ` : ''}
+                
+                ${llm.future_directions_html ? `
+                <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fas fa-crystal-ball"></i> Future Directions</h4>
+                    <div class="report-content">${llm.future_directions_html}</div>
+                </div>
+                ` : ''}
+                
+                ${llm.research_ideas_html ? `
+                <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> Research Ideas</h4>
+                    <div class="report-content">${llm.research_ideas_html}</div>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        // ==================== Utility Functions ====================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function initScrollBehavior() {
+            const backToTop = document.getElementById('back-to-top');
+            
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTop.classList.add('visible');
+                } else {
+                    backToTop.classList.remove('visible');
+                }
+            });
+            
+            backToTop.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+        
+        // Highlight current nav
+        function highlightCurrentNav() {
+            const sections = document.querySelectorAll('.content-section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (window.pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
+        
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            initScrollBehavior();
+            highlightCurrentNav();
+            
+            // Render all domains data
+            ALL_DOMAINS_DATA.forEach(data => {
+                renderPapers(data.domain_id, data.papers);
+                // Pass hasAnalysisReport flag to avoid duplicating content
+                const hasAnalysisReport = !!data.analysis_report;
+                renderAnalysis(data.domain_id, data.analysis, hasAnalysisReport);
+            });
+            
+            // Expand all domains by default
+            const allDomains = document.querySelectorAll('.nav-domain');
+            allDomains.forEach(domain => {
+                domain.classList.add('expanded');
+            });
+            
+            // Bind nav link click events (smooth scroll)
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    smoothScrollTo(targetId);
+                });
+            });
+            
+            // Bind back link click events
+            document.querySelectorAll('.back-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    smoothScrollTo(targetId);
+                });
+            });
+            
+            // Scroll to first papers section by default
+            setTimeout(() => {
+                const firstPapers = document.querySelector('[id^="papers-"]');
+                if (firstPapers) {
+                    smoothScrollTo('#' + firstPapers.id);
+                }
+            }, 300);
+            
+            // Bind events
+            document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+        });
+    
+    </script>
+</body>
+</html>
