@@ -3,207 +3,628 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZZBased | AI/ML 研究探索</title>
+    <title>ZZBased | AI/ML 研究与探索</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root { --primary: #667eea; --primary-dark: #5a6fd6; --secondary: #764ba2; --accent: #f093fb; --bg-dark: #1a1a2e; --bg-light: #f8f9fa; --text-dark: #2d3436; --text-light: #636e72; --card-shadow: 0 10px 40px rgba(102, 126, 234, 0.15); }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg-light); color: var(--text-dark); line-height: 1.6; }
-        nav { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); padding: 15px 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
-        .nav-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { color: white; font-size: 1.5rem; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-        .logo-icon { font-size: 1.8rem; }
-        .nav-links { display: flex; gap: 30px; list-style: none; }
-        .nav-links a { color: rgba(255,255,255,0.9); text-decoration: none; font-weight: 500; transition: color 0.3s; padding: 8px 16px; border-radius: 8px; }
-        .nav-links a:hover, .nav-links a.active { color: white; background: rgba(255,255,255,0.15); }
-        .hero { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); padding: 80px 20px; text-align: center; color: white; }
-        .hero-emoji { font-size: 4rem; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .hero h1 { font-size: 3rem; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .hero .subtitle { font-size: 1.3rem; opacity: 0.95; max-width: 600px; margin: 0 auto 30px; }
-        .hero-stats { display: flex; justify-content: center; gap: 50px; margin-top: 40px; }
-        .stat-item { text-align: center; }
-        .stat-number { font-size: 2.5rem; font-weight: 700; }
-        .stat-label { font-size: 0.95rem; opacity: 0.85; }
-        .main-content { max-width: 1200px; margin: 0 auto; padding: 60px 20px; }
-        .section { margin-bottom: 60px; }
-        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
-        .section-icon { font-size: 2rem; }
-        .section-title { font-size: 1.8rem; color: var(--text-dark); }
-        .section-subtitle { color: var(--text-light); font-size: 1rem; margin-left: auto; }
-        .directory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
-        .directory-card { background: white; border-radius: 16px; padding: 30px; box-shadow: var(--card-shadow); transition: transform 0.3s ease, box-shadow 0.3s ease; border: 1px solid rgba(102, 126, 234, 0.1); }
-        .directory-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(102, 126, 234, 0.2); }
-        .directory-card a { text-decoration: none; color: inherit; }
-        .directory-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-        .directory-icon { font-size: 2.5rem; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .directory-name { font-size: 1.4rem; font-weight: 600; color: var(--primary); }
-        .directory-desc { color: var(--text-light); font-size: 0.95rem; margin-bottom: 20px; }
-        .directory-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #eee; }
-        .directory-count { font-size: 0.9rem; color: var(--text-light); }
-        .directory-arrow { font-size: 1.3rem; color: var(--primary); transition: transform 0.3s; }
-        .directory-card:hover .directory-arrow { transform: translateX(5px); }
-        .report-list { display: flex; flex-direction: column; gap: 15px; }
-        .report-card { background: white; border-radius: 12px; padding: 20px 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all 0.3s ease; border-left: 4px solid var(--primary); }
-        .report-card:hover { transform: translateX(10px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .report-card a { text-decoration: none; display: flex; justify-content: space-between; align-items: center; }
-        .report-info { display: flex; align-items: center; gap: 15px; }
-        .report-date { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
-        .report-tag { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
-        .report-desc { color: var(--text-light); font-size: 0.9rem; }
-        .report-arrow { font-size: 1.5rem; color: var(--primary); }
-        .about-content { background: white; border-radius: 16px; padding: 40px; box-shadow: var(--card-shadow); }
-        .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
-        .about-item { text-align: center; padding: 20px; }
-        .about-icon { font-size: 2.5rem; margin-bottom: 15px; }
-        .about-title { font-size: 1.1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 10px; }
-        .about-desc { color: var(--text-light); font-size: 0.9rem; }
-        footer { background: var(--bg-dark); color: rgba(255,255,255,0.8); padding: 40px 20px; text-align: center; }
-        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; }
-        .footer-links a { color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s; }
-        .footer-links a:hover { color: white; }
-        .footer-copyright { font-size: 0.9rem; opacity: 0.7; }
-        @media (max-width: 768px) { .nav-links { display: none; } .hero h1 { font-size: 2rem; } .hero-stats { flex-direction: column; gap: 20px; } .section-header { flex-direction: column; align-items: flex-start; gap: 10px; } .section-subtitle { margin-left: 0; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --bg-dark: #1a1a2e;
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3436;
+            --text-light: #636e72;
+            --card-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+            --arxiv-color: #00b894;
+            --arxiv-gradient: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            --article-color: #e17055;
+            --article-gradient: linear-gradient(135deg, #e17055 0%, #fdcb6e 100%);
+            --project-color: #6c5ce7;
+            --project-gradient: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: white;
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 70px 20px 80px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-light);
+            clip-path: ellipse(55% 100% at 50% 100%);
+        }
+
+        .hero-emoji {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        /* Category Section */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 60px rgba(102, 126, 234, 0.25);
+        }
+
+        .category-header {
+            padding: 35px 30px 25px;
+            color: white;
+            text-align: center;
+        }
+
+        .category-header.arxiv {
+            background: var(--arxiv-gradient);
+        }
+
+        .category-header.articles {
+            background: var(--article-gradient);
+        }
+
+        .category-header.projects {
+            background: var(--project-gradient);
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .category-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .category-body {
+            padding: 25px 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-desc {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+
+        .category-items {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .category-items li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-items li:last-child {
+            border-bottom: none;
+        }
+
+        .category-items a {
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .category-items a:hover {
+            color: var(--primary);
+        }
+
+        .item-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .item-tag.latest {
+            background: #e6fff9;
+            color: #00b894;
+        }
+
+        .item-tag.new {
+            background: #fff3e0;
+            color: #e17055;
+        }
+
+        .item-tag.hot {
+            background: #f3e5f5;
+            color: #6c5ce7;
+        }
+
+        .category-footer {
+            padding: 15px 30px;
+            border-top: 1px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .category-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 8px 20px;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        .category-link.arxiv {
+            color: var(--arxiv-color);
+        }
+
+        .category-link.arxiv:hover {
+            background: #e6fff9;
+        }
+
+        .category-link.articles {
+            color: var(--article-color);
+        }
+
+        .category-link.articles:hover {
+            background: #fff3e0;
+        }
+
+        .category-link.projects {
+            color: var(--project-color);
+        }
+
+        .category-link.projects:hover {
+            background: #f3e5f5;
+        }
+
+        /* About Section */
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .section-icon {
+            font-size: 1.8rem;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            color: var(--text-dark);
+        }
+
+        .about-content {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+        }
+
+        .about-item {
+            text-align: center;
+            padding: 20px 15px;
+        }
+
+        .about-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .about-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .about-desc {
+            color: var(--text-light);
+            font-size: 0.88rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-dark);
+            color: rgba(255,255,255,0.8);
+            padding: 35px 20px;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-copyright {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .footer-copyright a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Coming soon badge */
+        .coming-soon {
+            display: inline-block;
+            background: #f0f0f0;
+            color: var(--text-light);
+            font-size: 0.75rem;
+            padding: 2px 10px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .category-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+                padding: 15px 20px;
+                gap: 5px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1rem;
+            }
+
+            .about-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .about-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <a href="/" class="logo"><span class="logo-icon">🚀</span><span>ZZBased</span></a>
+            <a href="/" class="logo">
+                <span class="logo-icon">🚀</span>
+                <span>ZZBased</span>
+            </a>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')">☰</button>
             <ul class="nav-links">
-                <li><a href="#home" class="active">首页</a></li>
-                <li><a href="#directories">目录</a></li>
-                <li><a href="#arxiv">ArXiv日报</a></li>
-                <li><a href="#about">关于</a></li>
+                <li><a href="#" class="active">首页</a></li>
+                <li><a href="arxiv/">Daily ArXiv</a></li>
+                <li><a href="articles/">个人文章</a></li>
+                <li><a href="projects/">个人项目</a></li>
                 <li><a href="https://github.com/zzbased2" target="_blank">GitHub</a></li>
             </ul>
         </div>
     </nav>
-    <section class="hero" id="home">
+
+    <!-- Hero Section -->
+    <section class="hero">
         <div class="hero-emoji">🧠</div>
-        <h1>AI/ML 研究探索</h1>
-        <p class="subtitle">每日追踪前沿 AI 论文，探索推荐系统与 LLM Agent 的最新进展</p>
-        <div class="hero-stats">
-            <div class="stat-item"><div class="stat-number">📚</div><div class="stat-label">ArXiv 日报</div></div>
-            <div class="stat-item"><div class="stat-number">🤖</div><div class="stat-label">LLM Agent</div></div>
-            <div class="stat-item"><div class="stat-number">💡</div><div class="stat-label">推荐系统</div></div>
-        </div>
+        <h1>ZZBased 的个人空间</h1>
+        <p class="subtitle">追踪前沿 AI 研究，记录技术思考，分享开源项目</p>
     </section>
+
+    <!-- Main Content -->
     <main class="main-content">
-        <section class="section" id="directories">
-            <div class="section-header">
-                <span class="section-icon">📁</span>
-                <h2 class="section-title">内容目录</h2>
-                <span class="section-subtitle">浏览所有分类内容</span>
+
+        <!-- Three Category Cards -->
+        <div class="category-grid">
+
+            <!-- 1. Daily ArXiv -->
+            <div class="category-card">
+                <div class="category-header arxiv">
+                    <span class="category-icon">📄</span>
+                    <div class="category-title">Daily ArXiv</div>
+                    <div class="category-subtitle">每日论文追踪</div>
+                </div>
+                <div class="category-body">
+                    <p class="category-desc">
+                        每日自动追踪 ArXiv 最新论文，覆盖推荐系统、LLM Agent 等 AI/ML 热门方向，包含论文摘要、关键词分析和词云可视化。
+                    </p>
+                    <ul class="category-items">
+                        <li>
+                            <a href="arxiv/daily_arxiv_2026-05-21.html">📅 2026-05-21 论文精选</a>
+                            <span class="item-tag latest">最新</span>
+                        </li>
+                        <li>
+                            <a href="arxiv/daily_arxiv_2026-05-20.html">📅 2026-05-20 论文精选</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="category-footer">
+                    <a href="arxiv/" class="category-link arxiv">查看全部日报 →</a>
+                </div>
             </div>
-            <div class="directory-grid">
-                <div class="directory-card">
-                    <a href="arxiv/">
-                        <div class="directory-header"><span class="directory-icon">📄</span><span class="directory-name">ArXiv 论文日报</span></div>
-                        <p class="directory-desc">每日精选 AI/ML 领域最新论文，涵盖推荐系统、LLM Agent 等热门方向，包含论文摘要、关键词分析和词云可视化。</p>
-                        <div class="directory-meta"><span class="directory-count">📊 共 83 份日报</span><span class="directory-arrow">→</span></div>
-                    </a>
+
+            <!-- 2. Personal Articles -->
+            <div class="category-card">
+                <div class="category-header articles">
+                    <span class="category-icon">✍️</span>
+                    <div class="category-title">个人文章</div>
+                    <div class="category-subtitle">技术思考与总结</div>
                 </div>
-                <div class="directory-card">
-                    <a href="#">
-                        <div class="directory-header"><span class="directory-icon">🔬</span><span class="directory-name">研究笔记</span></div>
-                        <p class="directory-desc">深度解读经典论文，记录学习心得与实践经验，分享技术见解与思考。</p>
-                        <div class="directory-meta"><span class="directory-count">🚧 敬请期待</span><span class="directory-arrow">→</span></div>
-                    </a>
+                <div class="category-body">
+                    <p class="category-desc">
+                        深度解读经典论文，记录学习心得与实践经验，分享对推荐系统、大语言模型、AI Agent 等领域的技术洞察。
+                    </p>
+                    <ul class="category-items">
+                        <li>
+                            <a href="articles/zhihu_merged_report.html">📊 知乎动态合并报告（114篇按推荐等级排序）</a>
+                            <span class="item-tag new">新上线</span>
+                        </li>
+                    </ul>
                 </div>
-                <div class="directory-card">
-                    <a href="#">
-                        <div class="directory-header"><span class="directory-icon">🛠️</span><span class="directory-name">开源项目</span></div>
-                        <p class="directory-desc">分享实用的开源工具和项目，包括本站使用的 daily-arxiv 论文追踪系统。</p>
-                        <div class="directory-meta"><span class="directory-count">🚧 敬请期待</span><span class="directory-arrow">→</span></div>
-                    </a>
+                <div class="category-footer">
+                    <a href="articles/" class="category-link articles">查看全部文章 →</a>
                 </div>
             </div>
-        </section>
-        <section class="section" id="arxiv">
-            <div class="section-header">
-                <span class="section-icon">📰</span>
-                <h2 class="section-title">最新 ArXiv 日报</h2>
-                <span class="section-subtitle"><a href="arxiv/" style="color: var(--primary); text-decoration: none;">查看全部 →</a></span>
+
+            <!-- 3. Personal Projects -->
+            <div class="category-card">
+                <div class="category-header projects">
+                    <span class="category-icon">�️</span>
+                    <div class="category-title">个人项目</div>
+                    <div class="category-subtitle">开源工具与实践</div>
+                </div>
+                <div class="category-body">
+                    <p class="category-desc">
+                        分享个人开源项目与实用工具，包括 daily-arxiv 论文追踪系统、效率工具等，欢迎 Star 与贡献。
+                    </p>
+                    <ul class="category-items">
+                        <li>
+                            <a href="projects/sudoku/">🔢 数独游戏</a>
+                            <span class="item-tag hot">互动</span>
+                        </li>
+                        <li>
+                            <a href="projects/brain-teasers/">🧠 智力大闯关</a>
+                            <span class="item-tag new">亲子</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="category-footer">
+                    <a href="projects/" class="category-link projects">查看全部项目 →</a>
+                </div>
             </div>
-            <div class="report-list">
 
-                <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-05-21.html">
-                        <div class="report-info">
-                            <span class="report-date">📅 2026-05-21</span>
-                            <span class="report-tag">最新</span>
-                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
-                        </div>
-                        <span class="report-arrow">→</span>
-                    </a>
-                </div>
+        </div>
 
-                <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-05-20.html">
-                        <div class="report-info">
-                            <span class="report-date">📅 2026-05-20</span>
-                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
-                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
-                        </div>
-                        <span class="report-arrow">→</span>
-                    </a>
-                </div>
-
-                <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-05-19.html">
-                        <div class="report-info">
-                            <span class="report-date">📅 2026-05-19</span>
-                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
-                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
-                        </div>
-                        <span class="report-arrow">→</span>
-                    </a>
-                </div>
-
-                <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-05-18.html">
-                        <div class="report-info">
-                            <span class="report-date">📅 2026-05-18</span>
-                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
-                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
-                        </div>
-                        <span class="report-arrow">→</span>
-                    </a>
-                </div>
-
-                <div class="report-card">
-                    <a href="arxiv/daily_arxiv_2026-05-17.html">
-                        <div class="report-info">
-                            <span class="report-date">📅 2026-05-17</span>
-                            <span class="report-tag" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%);">历史</span>
-                            <span class="report-desc">Recommendation & LLM Agent 论文精选</span>
-                        </div>
-                        <span class="report-arrow">→</span>
-                    </a>
-                </div>
-
-            </div>
-        </section>
+        <!-- About Section -->
         <section class="section" id="about">
-            <div class="section-header"><span class="section-icon">ℹ️</span><h2 class="section-title">关于本站</h2></div>
+            <div class="section-header">
+                <span class="section-icon">ℹ️</span>
+                <h2 class="section-title">关于本站</h2>
+            </div>
+
             <div class="about-content">
                 <div class="about-grid">
-                    <div class="about-item"><div class="about-icon">🤖</div><div class="about-title">AI 驱动</div><div class="about-desc">使用大语言模型自动分析和总结论文，提供高质量的内容摘要</div></div>
-                    <div class="about-item"><div class="about-icon">⚡</div><div class="about-title">每日更新</div><div class="about-desc">自动追踪 ArXiv 最新论文，确保您不错过任何重要研究</div></div>
-                    <div class="about-item"><div class="about-icon">🎯</div><div class="about-title">精准定位</div><div class="about-desc">专注推荐系统与 LLM Agent 领域，提供专业化的内容筛选</div></div>
-                    <div class="about-item"><div class="about-icon">📊</div><div class="about-title">可视化分析</div><div class="about-desc">提供词云、关键词分析等可视化功能，直观展示研究趋势</div></div>
+                    <div class="about-item">
+                        <div class="about-icon">🤖</div>
+                        <div class="about-title">AI 驱动</div>
+                        <div class="about-desc">使用大语言模型自动分析和总结论文，提供高质量的内容摘要</div>
+                    </div>
+                    <div class="about-item">
+                        <div class="about-icon">⚡</div>
+                        <div class="about-title">每日更新</div>
+                        <div class="about-desc">自动追踪 ArXiv 最新论文，确保不错过任何重要研究</div>
+                    </div>
+                    <div class="about-item">
+                        <div class="about-icon">🎯</div>
+                        <div class="about-title">精准定位</div>
+                        <div class="about-desc">专注推荐系统与 LLM Agent 领域，提供专业化的内容筛选</div>
+                    </div>
+                    <div class="about-item">
+                        <div class="about-icon">📊</div>
+                        <div class="about-title">可视化分析</div>
+                        <div class="about-desc">提供词云、关键词分析等可视化功能，直观展示研究趋势</div>
+                    </div>
                 </div>
             </div>
         </section>
+
     </main>
+
+    <!-- Footer -->
     <footer>
         <div class="footer-links">
             <a href="https://github.com/zzbased2" target="_blank">🔗 GitHub</a>
-            <a href="arxiv/">📄 ArXiv 日报</a>
-            <a href="https://github.com/zzbased2/efficiency" target="_blank">⚙️ 项目源码</a>
+            <a href="arxiv/">📄 Daily ArXiv</a>
+            <a href="articles/">✍️ 个人文章</a>
+            <a href="projects/">🛠️ 个人项目</a>
         </div>
-        <p class="footer-copyright">© 2026 ZZBased | Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank" style="color: var(--primary);">daily-arxiv</a></p>
+        <p class="footer-copyright">
+            © 2026 ZZBased | Powered by <a href="https://github.com/zzbased2/efficiency" target="_blank">daily-arxiv</a>
+        </p>
     </footer>
 </body>
 </html>
