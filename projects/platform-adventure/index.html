@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冒险跳跳 - 平台跳跃冒险</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.3);
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        #ui-overlay.active { pointer-events: all; }
+        .menu-screen {
+            text-align: center;
+            color: white;
+            display: none;
+        }
+        .menu-screen.visible { display: block; }
+        .menu-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 200, 0, 0.8);
+        }
+        .menu-screen h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        .menu-screen p {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            margin: 10px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+        .btn:hover { transform: scale(1.1); }
+        .btn-start {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        .btn-level {
+            background: linear-gradient(135deg, #4ecdc4, #44bd9e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+        .btn-level.locked {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .controls-info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div id="ui-overlay" class="active">
+        <div id="start-screen" class="menu-screen visible">
+            <h1>冒险跳跳</h1>
+            <p>一个充满挑战的平台跳跃冒险</p>
+            <br>
+            <button class="btn btn-start" onclick="startGame()">开始冒险</button>
+            <div class="controls-info">
+                <p>← → 移动 | 空格/↑ 跳跃 | 空中可双段跳</p>
+                <p>贴墙时按跳跃可墙跳 | 收集所有星星到达终点</p>
+            </div>
+        </div>
+        <div id="level-screen" class="menu-screen">
+            <h2>选择关卡</h2>
+            <div id="level-buttons"></div>
+            <br>
+            <button class="btn btn-start" onclick="showStart()" style="font-size:16px;padding:10px 25px;">返回</button>
+        </div>
+        <div id="win-screen" class="menu-screen">
+            <h2 id="win-title">关卡通过！</h2>
+            <p id="win-info"></p>
+            <button class="btn btn-start" onclick="nextLevel()">下一关</button>
+            <button class="btn btn-level" onclick="showLevels()">关卡选择</button>
+        </div>
+        <div id="death-screen" class="menu-screen">
+            <h2 style="color:#ff6b6b;">失败了！</h2>
+            <p style="color:#ccc;">再试一次吧，你可以的！</p>
+            <button class="btn btn-start" onclick="retryLevel()">重试</button>
+        </div>
+    </div>
+
+    <script>
+// ============ GAME ENGINE ============
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+canvas.width = 960;
+canvas.height = 640;
+
+// Game state
+let gameState = 'menu'; // menu, playing, win, dead
+let currentLevel = 0;
+let unlockedLevels = 1;
+let stars = 0;
+let totalStars = 0;
+let deathCount = 0;
+let frameCount = 0;
+
+// Keys
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; if(['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault(); });
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ============ PLAYER ============
+const player = {
+    x: 50, y: 400, w: 28, h: 36,
+    vx: 0, vy: 0,
+    speed: 5.5, jumpForce: -15, gravity: 0.55,
+    grounded: false, wallSliding: false, wallDir: 0,
+    jumpsLeft: 2, maxJumps: 2,
+    jumpPressed: false,
+    facing: 1,
+    dead: false,
+    trail: [],
+    animFrame: 0, animTimer: 0
+};
+
+function resetPlayer(x, y) {
+    player.x = x || 50;
+    player.y = y || 400;
+    player.vx = 0;
+    player.vy = 0;
+    player.grounded = false;
+    player.wallSliding = false;
+    player.jumpsLeft = 2;
+    player.dead = false;
+    player.trail = [];
+}
+
+// ============ LEVEL DATA ============
+const levels = [
+    // Level 1: 森林 - 教学+中等难度
+    {
+        name: "幽暗森林",
+        bg: { top: '#1a472a', bottom: '#0d2818' },
+        spawn: [50, 500],
+        goal: [900, 80],
+        platforms: [
+            // 地面
+            {x:0, y:590, w:250, h:50, type:'solid'},
+            {x:250, y:560, w:100, h:30, type:'solid'},
+            {x:380, y:520, w:120, h:30, type:'solid'},
+            // 移动平台区域
+            {x:520, y:480, w:100, h:20, type:'moving', moveX:70, speed:1.5},
+            {x:650, y:420, w:90, h:20, type:'solid'},
+            {x:750, y:360, w:100, h:20, type:'moving', moveY:70, speed:1.2},
+            // 上层
+            {x:620, y:300, w:80, h:20, type:'solid'},
+            {x:500, y:250, w:90, h:20, type:'solid'},
+            {x:370, y:280, w:80, h:20, type:'moving', moveX:50, speed:1.8},
+            {x:250, y:220, w:100, h:20, type:'solid'},
+            // 弹簧区
+            {x:130, y:300, w:80, h:20, type:'solid'},
+            {x:140, y:310, w:30, h:10, type:'spring'},
+            // 高层
+            {x:50, y:180, w:120, h:20, type:'solid'},
+            {x:200, y:140, w:90, h:20, type:'moving', moveX:80, speed:2},
+            {x:380, y:130, w:100, h:20, type:'solid'},
+            {x:500, y:100, w:80, h:20, type:'solid'},
+            {x:630, y:80, w:80, h:20, type:'solid'},
+            {x:730, y:60, w:80, h:20, type:'solid'},
+            {x:850, y:80, w:110, h:20, type:'solid'},
+            // 墙壁 (用于墙跳)
+            {x:480, y:350, w:20, h:140, type:'solid'},
+            {x:160, y:400, w:20, h:120, type:'solid'},
+        ],
+        hazards: [
+            {x:300, y:570, w:35, h:20, type:'spike'},
+            {x:450, y:500, w:25, h:20, type:'spike'},
+            {x:320, y:260, w:25, h:20, type:'spike'},
+        ],
+        stars: [
+            {x:540, y:450, collected:false},
+            {x:650, y:380, collected:false},
+            {x:400, y:250, collected:false},
+            {x:130, y:260, collected:false},
+            {x:270, y:110, collected:false},
+        ],
+        decorations: [
+            {x:30, y:550, type:'tree'},
+            {x:150, y:540, type:'bush'},
+            {x:400, y:480, type:'tree'},
+            {x:700, y:320, type:'bush'},
+        ]
+    },
+    // Level 2: 云端 - 较难
+    {
+        name: "云端天际",
+        bg: { top: '#87CEEB', bottom: '#E0F7FA' },
+        spawn: [50, 550],
+        goal: [880, 60],
+        platforms: [
+            // 起点
+            {x:0, y:590, w:180, h:50, type:'solid'},
+            // 消失平台序列
+            {x:180, y:540, w:80, h:15, type:'disappear', timer:60},
+            {x:280, y:490, w:80, h:15, type:'disappear', timer:55},
+            {x:380, y:440, w:80, h:15, type:'disappear', timer:50},
+            // 风力区域的平台
+            {x:480, y:400, w:100, h:20, type:'solid'},
+            {x:580, y:440, w:80, h:15, type:'moving', moveX:80, speed:2},
+            {x:720, y:380, w:90, h:20, type:'solid'},
+            // 中层 - 需要精准跳跃
+            {x:820, y:340, w:70, h:15, type:'disappear', timer:50},
+            {x:720, y:280, w:70, h:15, type:'disappear', timer:50},
+            {x:600, y:240, w:80, h:20, type:'solid'},
+            {x:480, y:200, w:70, h:15, type:'moving', moveY:50, speed:1.5},
+            // 上层
+            {x:350, y:180, w:90, h:20, type:'solid'},
+            {x:220, y:150, w:80, h:15, type:'disappear', timer:50},
+            {x:100, y:120, w:100, h:20, type:'solid'},
+            {x:200, y:80, w:80, h:15, type:'moving', moveX:70, speed:2.5},
+            {x:350, y:60, w:80, h:20, type:'solid'},
+            {x:480, y:50, w:70, h:15, type:'disappear', timer:45},
+            {x:600, y:70, w:80, h:20, type:'solid'},
+            {x:720, y:50, w:90, h:20, type:'solid'},
+            {x:840, y:60, w:120, h:20, type:'solid'},
+            // 墙壁
+            {x:460, y:300, w:20, h:120, type:'solid'},
+            {x:830, y:150, w:20, h:140, type:'solid'},
+        ],
+        hazards: [
+            {x:500, y:380, w:60, h:150, type:'wind', force:-2.5},
+            {x:200, y:520, w:35, h:20, type:'spike'},
+            {x:650, y:360, w:25, h:20, type:'spike'},
+            {x:550, y:55, w:25, h:25, type:'saw'},
+        ],
+        stars: [
+            {x:300, y:460, collected:false},
+            {x:630, y:410, collected:false},
+            {x:760, y:250, collected:false},
+            {x:130, y:85, collected:false},
+            {x:500, y:20, collected:false},
+            {x:760, y:20, collected:false},
+        ],
+        decorations: [
+            {x:50, y:560, type:'cloud'},
+            {x:300, y:350, type:'cloud'},
+            {x:650, y:200, type:'cloud'},
+            {x:100, y:50, type:'cloud'},
+        ]
+    },
+    // Level 3: 火山城堡 - 很难
+    {
+        name: "烈焰城堡",
+        bg: { top: '#2d1b00', bottom: '#1a0a00' },
+        spawn: [50, 530],
+        goal: [880, 50],
+        platforms: [
+            // 起点区域
+            {x:0, y:570, w:150, h:70, type:'solid'},
+            {x:150, y:540, w:70, h:15, type:'moving', moveY:35, speed:1.5},
+            {x:240, y:500, w:80, h:20, type:'solid'},
+            // 岩浆上方
+            {x:340, y:520, w:70, h:15, type:'disappear', timer:40},
+            {x:430, y:480, w:70, h:15, type:'disappear', timer:40},
+            {x:520, y:440, w:80, h:20, type:'solid'},
+            // 旋转机关区
+            {x:620, y:460, w:70, h:15, type:'moving', moveX:50, speed:2.5},
+            {x:740, y:420, w:90, h:20, type:'solid'},
+            {x:850, y:380, w:80, h:20, type:'solid'},
+            // 墙跳走廊
+            {x:880, y:200, w:20, h:180, type:'solid'},
+            {x:820, y:250, w:20, h:150, type:'solid'},
+            // 中层
+            {x:700, y:280, w:80, h:20, type:'solid'},
+            {x:580, y:310, w:70, h:15, type:'moving', moveX:40, speed:2.5},
+            {x:460, y:280, w:70, h:15, type:'disappear', timer:35},
+            {x:350, y:250, w:80, h:20, type:'solid'},
+            {x:230, y:280, w:70, h:15, type:'moving', moveY:40, speed:2},
+            {x:120, y:240, w:80, h:20, type:'solid'},
+            // 最上层
+            {x:50, y:180, w:70, h:15, type:'disappear', timer:35},
+            {x:150, y:140, w:70, h:15, type:'disappear', timer:35},
+            {x:270, y:120, w:80, h:20, type:'solid'},
+            {x:380, y:100, w:70, h:15, type:'moving', moveX:60, speed:2.5},
+            {x:500, y:80, w:70, h:15, type:'disappear', timer:30},
+            {x:620, y:60, w:80, h:20, type:'solid'},
+            {x:740, y:50, w:80, h:20, type:'solid'},
+            {x:840, y:50, w:120, h:20, type:'solid'},
+            // 额外墙壁
+            {x:300, y:350, w:20, h:120, type:'solid'},
+            {x:100, y:320, w:20, h:100, type:'solid'},
+        ],
+        hazards: [
+            // 岩浆底部
+            {x:0, y:620, w:960, h:30, type:'lava'},
+            // 尖刺
+            {x:270, y:480, w:35, h:20, type:'spike'},
+            {x:560, y:420, w:25, h:20, type:'spike'},
+            {x:400, y:230, w:25, h:20, type:'spike'},
+            // 锯片 - 减少
+            {x:650, y:350, w:28, h:28, type:'saw'},
+            {x:480, y:180, w:28, h:28, type:'saw'},
+            // 火球发射器 - 间隔延长
+            {x:400, y:450, w:20, h:20, type:'fireball_spawner', interval:120, dir:'up'},
+            {x:600, y:150, w:20, h:20, type:'fireball_spawner', interval:110, dir:'left'},
+        ],
+        stars: [
+            {x:370, y:490, collected:false},
+            {x:680, y:430, collected:false},
+            {x:860, y:280, collected:false},
+            {x:460, y:250, collected:false},
+            {x:150, y:200, collected:false},
+            {x:400, y:70, collected:false},
+            {x:880, y:20, collected:false},
+        ],
+        decorations: [
+            {x:50, y:530, type:'torch'},
+            {x:500, y:400, type:'torch'},
+            {x:800, y:350, type:'torch'},
+            {x:300, y:210, type:'torch'},
+        ]
+    }
+];
+
+// ============ GAME OBJECTS ============
+let platforms = [];
+let hazards = [];
+let levelStars = [];
+let decorations = [];
+let particles = [];
+let fireballs = [];
+let camera = { x: 0, y: 0 };
+
+function loadLevel(idx) {
+    const level = levels[idx];
+    platforms = level.platforms.map(p => ({
+        ...p,
+        origX: p.x, origY: p.y,
+        phase: Math.random() * Math.PI * 2,
+        disappeared: false, disappearTimer: 0, respawnTimer: 0,
+        touched: false
+    }));
+    hazards = level.hazards.map(h => ({...h, phase: Math.random() * Math.PI * 2}));
+    levelStars = level.stars.map(s => ({...s, collected: false, bobPhase: Math.random() * Math.PI * 2}));
+    decorations = level.decorations || [];
+    fireballs = [];
+    particles = [];
+    stars = 0;
+    totalStars = level.stars.length;
+    resetPlayer(level.spawn[0], level.spawn[1]);
+}
+
+// ============ PHYSICS & COLLISION ============
+function rectCollide(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function updatePlayer() {
+    if (player.dead) return;
+
+    // Horizontal movement
+    let moveX = 0;
+    if (keys['ArrowLeft'] || keys['KeyA']) { moveX = -1; player.facing = -1; }
+    if (keys['ArrowRight'] || keys['KeyD']) { moveX = 1; player.facing = 1; }
+
+    player.vx = moveX * player.speed;
+
+    // Wall sliding detection
+    player.wallSliding = false;
+    player.wallDir = 0;
+    if (!player.grounded) {
+        for (let p of platforms) {
+            if (p.disappeared) continue;
+            // Check wall on left
+            if (moveX < 0 && player.x <= p.x + p.w + 2 && player.x >= p.x + p.w - 4 &&
+                player.y + player.h > p.y && player.y < p.y + p.h) {
+                player.wallSliding = true;
+                player.wallDir = -1;
+            }
+            // Check wall on right
+            if (moveX > 0 && player.x + player.w >= p.x - 2 && player.x + player.w <= p.x + 4 &&
+                player.y + player.h > p.y && player.y < p.y + p.h) {
+                player.wallSliding = true;
+                player.wallDir = 1;
+            }
+        }
+    }
+
+    // Wall slide slows fall
+    if (player.wallSliding && player.vy > 0) {
+        player.vy = Math.min(player.vy, 3);
+    }
+
+    // Jump
+    const jumpKey = keys['Space'] || keys['ArrowUp'] || keys['KeyW'];
+    if (jumpKey && !player.jumpPressed) {
+        player.jumpPressed = true;
+        if (player.wallSliding) {
+            // Wall jump
+            player.vx = -player.wallDir * 8;
+            player.vy = player.jumpForce * 0.85;
+            player.jumpsLeft = 1;
+            spawnParticles(player.x + player.w/2, player.y + player.h/2, 5, '#fff');
+        } else if (player.jumpsLeft > 0) {
+            player.vy = player.jumpForce * (player.jumpsLeft === player.maxJumps ? 1 : 0.85);
+            player.jumpsLeft--;
+            spawnParticles(player.x + player.w/2, player.y + player.h, 4, '#ffd700');
+        }
+    }
+    if (!jumpKey) player.jumpPressed = false;
+
+    // Gravity
+    player.vy += player.gravity;
+    if (player.vy > 15) player.vy = 15;
+
+    // Apply velocity and check collisions
+    player.x += player.vx;
+    player.grounded = false;
+
+    // Horizontal collision
+    for (let p of platforms) {
+        if (p.disappeared) continue;
+        if (rectCollide(player, p)) {
+            if (player.vx > 0) player.x = p.x - player.w;
+            else if (player.vx < 0) player.x = p.x + p.w;
+        }
+    }
+
+    player.y += player.vy;
+
+    // Vertical collision
+    for (let p of platforms) {
+        if (p.disappeared) continue;
+        if (rectCollide(player, p)) {
+            if (player.vy > 0) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
+                player.jumpsLeft = player.maxJumps;
+
+                // Spring bounce
+                if (p.type === 'spring') {
+                    player.vy = -20;
+                    player.grounded = false;
+                    spawnParticles(player.x + player.w/2, player.y + player.h, 8, '#00ff88');
+                }
+                // Disappearing platform
+                if (p.type === 'disappear' && !p.touched) {
+                    p.touched = true;
+                    p.disappearTimer = p.timer;
+                }
+                // Move with platform
+                if (p.type === 'moving') {
+                    if (p.moveX) player.x += Math.cos(p.phase) * p.speed * 0.05;
+                }
+            } else if (player.vy < 0) {
+                player.y = p.y + p.h;
+                player.vy = 0;
+            }
+        }
+    }
+
+    // Trail effect
+    if (Math.abs(player.vx) > 0 || Math.abs(player.vy) > 2) {
+        player.trail.push({x: player.x + player.w/2, y: player.y + player.h/2, alpha: 0.5});
+    }
+    player.trail = player.trail.filter(t => { t.alpha -= 0.03; return t.alpha > 0; });
+
+    // Fall off screen
+    if (player.y > 660) killPlayer();
+
+    // Animation
+    player.animTimer++;
+    if (player.animTimer > 8) { player.animTimer = 0; player.animFrame = (player.animFrame + 1) % 4; }
+}
+
+function updatePlatforms() {
+    for (let p of platforms) {
+        if (p.type === 'moving') {
+            p.phase += 0.02;
+            if (p.moveX) p.x = p.origX + Math.sin(p.phase) * p.moveX;
+            if (p.moveY) p.y = p.origY + Math.sin(p.phase) * p.moveY;
+        }
+        if (p.type === 'disappear') {
+            if (p.touched && !p.disappeared) {
+                p.disappearTimer--;
+                if (p.disappearTimer <= 0) {
+                    p.disappeared = true;
+                    p.respawnTimer = 120;
+                    spawnParticles(p.x + p.w/2, p.y + p.h/2, 6, '#aaa');
+                }
+            }
+            if (p.disappeared) {
+                p.respawnTimer--;
+                if (p.respawnTimer <= 0) {
+                    p.disappeared = false;
+                    p.touched = false;
+                }
+            }
+        }
+    }
+}
+
+function updateHazards() {
+    for (let h of hazards) {
+        if (h.type === 'saw') {
+            h.phase += 0.05;
+        }
+        if (h.type === 'wind' && !player.dead) {
+            if (rectCollide(player, h)) {
+                player.vy += h.force * 0.3;
+            }
+        }
+        if (h.type === 'fireball_spawner') {
+            h.phase = (h.phase || 0) + 1;
+            if (h.phase >= h.interval) {
+                h.phase = 0;
+                let vx = 0, vy = 0;
+                if (h.dir === 'up') vy = -4;
+                else if (h.dir === 'down') vy = 4;
+                else if (h.dir === 'left') vx = -4;
+                else if (h.dir === 'right') vx = 4;
+                fireballs.push({x: h.x, y: h.y, w:12, h:12, vx, vy, life:150});
+            }
+        }
+        // Check player collision with spike/lava/saw
+        if ((h.type === 'spike' || h.type === 'lava' || h.type === 'saw') && !player.dead) {
+            let hBox = {...h};
+            if (h.type === 'saw') {
+                hBox = {x: h.x - h.w/2, y: h.y - h.h/2, w: h.w, h: h.h};
+            }
+            if (rectCollide(player, hBox)) {
+                killPlayer();
+            }
+        }
+    }
+
+    // Update fireballs
+    for (let i = fireballs.length - 1; i >= 0; i--) {
+        let fb = fireballs[i];
+        fb.x += fb.vx;
+        fb.y += fb.vy;
+        fb.life--;
+        if (fb.life <= 0 || fb.x < -50 || fb.x > 1010 || fb.y < -50 || fb.y > 690) {
+            fireballs.splice(i, 1);
+            continue;
+        }
+        if (!player.dead && rectCollide(player, fb)) {
+            killPlayer();
+        }
+    }
+}
+
+function updateStars() {
+    for (let s of levelStars) {
+        if (s.collected) continue;
+        s.bobPhase += 0.05;
+        let sBox = {x: s.x - 12, y: s.y - 12 + Math.sin(s.bobPhase) * 3, w: 24, h: 24};
+        if (rectCollide(player, sBox)) {
+            s.collected = true;
+            stars++;
+            spawnParticles(s.x, s.y, 10, '#ffd700');
+        }
+    }
+}
+
+function checkGoal() {
+    const level = levels[currentLevel];
+    const goal = level.goal;
+    const gBox = {x: goal[0] - 20, y: goal[1] - 30, w: 40, h: 60};
+    if (rectCollide(player, gBox)) {
+        winLevel();
+    }
+}
+
+function killPlayer() {
+    player.dead = true;
+    deathCount++;
+    spawnParticles(player.x + player.w/2, player.y + player.h/2, 20, '#ff4444');
+    setTimeout(() => {
+        gameState = 'dead';
+        showScreen('death-screen');
+    }, 800);
+}
+
+function winLevel() {
+    gameState = 'win';
+    if (currentLevel + 1 >= unlockedLevels) {
+        unlockedLevels = Math.min(currentLevel + 2, levels.length);
+    }
+    document.getElementById('win-title').textContent =
+        currentLevel >= levels.length - 1 ? '恭喜通关！全部完成！' : '关卡通过！';
+    document.getElementById('win-info').textContent =
+        `收集星星: ${stars}/${totalStars} | 死亡次数: ${deathCount}`;
+    showScreen('win-screen');
+}
+
+// ============ PARTICLES ============
+function spawnParticles(x, y, count, color) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            life: 30 + Math.random() * 20,
+            color, size: 3 + Math.random() * 4
+        });
+    }
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15;
+        p.life--;
+        p.size *= 0.97;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+// ============ RENDERING ============
+function drawBackground(level) {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, level.bg.top);
+    grad.addColorStop(1, level.bg.bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawDecorations(level) {
+    for (let d of decorations) {
+        ctx.save();
+        if (d.type === 'tree') {
+            ctx.fillStyle = '#2d5016';
+            ctx.fillRect(d.x + 15, d.y - 30, 10, 40);
+            ctx.fillStyle = '#3a7020';
+            ctx.beginPath();
+            ctx.arc(d.x + 20, d.y - 40, 25, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (d.type === 'bush') {
+            ctx.fillStyle = '#2a6018';
+            ctx.beginPath();
+            ctx.arc(d.x + 15, d.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(d.x + 30, d.y - 3, 12, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (d.type === 'cloud') {
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, 20, 0, Math.PI * 2);
+            ctx.arc(d.x + 25, d.y - 5, 25, 0, Math.PI * 2);
+            ctx.arc(d.x + 50, d.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (d.type === 'torch') {
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(d.x + 5, d.y - 20, 6, 25);
+            // Flame
+            let flicker = Math.sin(frameCount * 0.1 + d.x) * 3;
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath();
+            ctx.arc(d.x + 8, d.y - 25 + flicker, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.arc(d.x + 8, d.y - 27 + flicker, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+function drawPlatforms() {
+    for (let p of platforms) {
+        if (p.disappeared) continue;
+        ctx.save();
+
+        if (p.type === 'solid') {
+            ctx.fillStyle = currentLevel === 0 ? '#4a7c3f' :
+                           currentLevel === 1 ? '#b8d4e3' : '#8b4513';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            // Top grass/snow/stone line
+            ctx.fillStyle = currentLevel === 0 ? '#6abd4f' :
+                           currentLevel === 1 ? '#fff' : '#a0522d';
+            ctx.fillRect(p.x, p.y, p.w, 4);
+        } else if (p.type === 'moving') {
+            ctx.fillStyle = '#5588cc';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#77aaee';
+            ctx.fillRect(p.x, p.y, p.w, 3);
+            // Arrow indicators
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(p.x + p.w/2 - 8, p.y + p.h/2 - 1, 16, 2);
+        } else if (p.type === 'disappear') {
+            let alpha = 1;
+            if (p.touched && !p.disappeared) {
+                alpha = p.disappearTimer / p.timer;
+                // Shake effect
+                ctx.translate(Math.random() * 2 - 1, Math.random() * 2 - 1);
+            }
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#cc6644';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = '#ff8866';
+            ctx.strokeRect(p.x, p.y, p.w, p.h);
+        } else if (p.type === 'spring') {
+            ctx.fillStyle = '#44dd44';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            // Spring coil look
+            ctx.strokeStyle = '#228822';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(p.x + p.w/2, p.y + 3 + i * 3, 8, 0, Math.PI);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+}
+
+function drawHazards() {
+    for (let h of hazards) {
+        ctx.save();
+        if (h.type === 'spike') {
+            ctx.fillStyle = '#ff3333';
+            ctx.beginPath();
+            ctx.moveTo(h.x, h.y + h.h);
+            ctx.lineTo(h.x + h.w/2, h.y);
+            ctx.lineTo(h.x + h.w, h.y + h.h);
+            ctx.fill();
+        } else if (h.type === 'lava') {
+            ctx.fillStyle = '#ff4400';
+            ctx.fillRect(h.x, h.y, h.w, h.h);
+            // Lava bubbles
+            ctx.fillStyle = '#ffaa00';
+            for (let i = 0; i < 8; i++) {
+                let bx = h.x + (i * 120 + frameCount * 0.5) % h.w;
+                let by = h.y + Math.sin(frameCount * 0.03 + i) * 5;
+                ctx.beginPath();
+                ctx.arc(bx, by, 4 + Math.sin(frameCount * 0.05 + i) * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (h.type === 'saw') {
+            ctx.translate(h.x, h.y);
+            ctx.rotate(h.phase);
+            ctx.fillStyle = '#aaa';
+            ctx.beginPath();
+            let r = h.w / 2;
+            for (let i = 0; i < 12; i++) {
+                let angle = (i / 12) * Math.PI * 2;
+                let outerR = i % 2 === 0 ? r : r * 0.7;
+                ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (h.type === 'wind') {
+            ctx.globalAlpha = 0.15;
+            ctx.fillStyle = '#88ccff';
+            ctx.fillRect(h.x, h.y, h.w, h.h);
+            // Wind lines
+            ctx.globalAlpha = 0.4;
+            ctx.strokeStyle = '#88ccff';
+            for (let i = 0; i < 5; i++) {
+                let ly = h.y + (h.h / 5) * i + (frameCount * 2 + i * 30) % h.h;
+                if (ly > h.y + h.h) ly -= h.h;
+                ctx.beginPath();
+                ctx.moveTo(h.x + 5, ly);
+                ctx.lineTo(h.x + h.w - 5, ly - 10);
+                ctx.stroke();
+            }
+        } else if (h.type === 'fireball_spawner') {
+            ctx.fillStyle = '#ff6600';
+            ctx.fillRect(h.x - 5, h.y - 5, 20, 20);
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(h.x - 2, h.y - 2, 14, 14);
+        }
+        ctx.restore();
+    }
+
+    // Draw fireballs
+    for (let fb of fireballs) {
+        ctx.save();
+        ctx.fillStyle = '#ff4400';
+        ctx.beginPath();
+        ctx.arc(fb.x + 6, fb.y + 6, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffcc00';
+        ctx.beginPath();
+        ctx.arc(fb.x + 6, fb.y + 6, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawStars() {
+    for (let s of levelStars) {
+        if (s.collected) continue;
+        ctx.save();
+        let by = Math.sin(s.bobPhase) * 3;
+        ctx.translate(s.x, s.y + by);
+        ctx.fillStyle = '#ffd700';
+        // Draw star shape
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            let angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+            let r = 10;
+            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        // Glow
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawGoal() {
+    const level = levels[currentLevel];
+    const gx = level.goal[0], gy = level.goal[1];
+    ctx.save();
+    // Flag pole
+    ctx.fillStyle = '#ddd';
+    ctx.fillRect(gx - 2, gy - 30, 4, 60);
+    // Flag
+    let wave = Math.sin(frameCount * 0.05) * 3;
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.moveTo(gx + 2, gy - 30);
+    ctx.lineTo(gx + 30 + wave, gy - 20);
+    ctx.lineTo(gx + 2, gy - 10);
+    ctx.fill();
+    // Glow
+    ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.05) * 0.1;
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.arc(gx, gy - 15, 25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawPlayer() {
+    if (player.dead) return;
+
+    // Trail
+    for (let t of player.trail) {
+        ctx.save();
+        ctx.globalAlpha = t.alpha * 0.3;
+        ctx.fillStyle = '#88ccff';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(player.x + player.w/2, player.y + player.h/2);
+    ctx.scale(player.facing, 1);
+
+    // Body
+    ctx.fillStyle = '#4488ff';
+    ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(2, -player.h/2 + 8, 8, 8);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(5, -player.h/2 + 10, 4, 4);
+
+    // Mouth (smile)
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(4, -player.h/2 + 22, 5, 0, Math.PI);
+    ctx.stroke();
+
+    // Running legs animation
+    if (player.grounded && Math.abs(player.vx) > 0) {
+        let legOffset = Math.sin(player.animFrame * Math.PI / 2) * 4;
+        ctx.fillStyle = '#3366cc';
+        ctx.fillRect(-6, player.h/2 - 4, 6, 6 + legOffset);
+        ctx.fillRect(2, player.h/2 - 4, 6, 6 - legOffset);
+    } else {
+        ctx.fillStyle = '#3366cc';
+        ctx.fillRect(-6, player.h/2 - 4, 6, 6);
+        ctx.fillRect(2, player.h/2 - 4, 6, 6);
+    }
+
+    // Wall sliding indicator
+    if (player.wallSliding) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        for (let i = 0; i < 3; i++) {
+            ctx.fillRect(-player.w/2 - 3, -5 + i * 8, 3, 5);
+        }
+    }
+
+    ctx.restore();
+}
+
+function drawParticles() {
+    for (let p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.life / 50;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    // Stars
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`★ ${stars}/${totalStars}`, 15, 30);
+
+    // Level name
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(levels[currentLevel].name, canvas.width - 15, 30);
+    ctx.textAlign = 'left';
+
+    // Deaths
+    ctx.fillStyle = '#ff6666';
+    ctx.font = '14px Arial';
+    ctx.fillText(`💀 ${deathCount}`, 15, 55);
+
+    // Controls hint (fades after 3 seconds)
+    if (frameCount < 180) {
+        ctx.globalAlpha = Math.max(0, 1 - frameCount / 180);
+        ctx.fillStyle = '#fff';
+        ctx.font = '13px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('← → 移动 | 空格 跳跃 | 贴墙+跳 = 墙跳', canvas.width/2, canvas.height - 20);
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = 1;
+    }
+}
+
+// ============ GAME LOOP ============
+function update() {
+    if (gameState !== 'playing') return;
+    frameCount++;
+    updatePlayer();
+    updatePlatforms();
+    updateHazards();
+    updateStars();
+    updateParticles();
+    checkGoal();
+}
+
+function draw() {
+    if (gameState !== 'playing') return;
+    const level = levels[currentLevel];
+    drawBackground(level);
+    drawDecorations(level);
+    drawPlatforms();
+    drawHazards();
+    drawStars();
+    drawGoal();
+    drawPlayer();
+    drawParticles();
+    drawHUD();
+}
+
+function gameLoop() {
+    if (gameState === 'playing') {
+        update();
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+// ============ UI FUNCTIONS ============
+function hideAllScreens() {
+    document.querySelectorAll('.menu-screen').forEach(s => s.classList.remove('visible'));
+}
+
+function showScreen(id) {
+    hideAllScreens();
+    document.getElementById(id).classList.add('visible');
+    document.getElementById('ui-overlay').classList.add('active');
+}
+
+function hideOverlay() {
+    hideAllScreens();
+    document.getElementById('ui-overlay').classList.remove('active');
+}
+
+function showStart() {
+    showScreen('start-screen');
+}
+
+function showLevels() {
+    const container = document.getElementById('level-buttons');
+    container.innerHTML = '';
+    for (let i = 0; i < levels.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-level' + (i >= unlockedLevels ? ' locked' : '');
+        btn.textContent = `${i+1}. ${levels[i].name}`;
+        if (i < unlockedLevels) {
+            btn.onclick = () => { currentLevel = i; startLevel(); };
+        }
+        container.appendChild(btn);
+    }
+    showScreen('level-screen');
+}
+
+function startGame() {
+    showLevels();
+}
+
+function startLevel() {
+    loadLevel(currentLevel);
+    deathCount = 0;
+    frameCount = 0;
+    gameState = 'playing';
+    hideOverlay();
+}
+
+function retryLevel() {
+    loadLevel(currentLevel);
+    frameCount = 0;
+    gameState = 'playing';
+    hideOverlay();
+}
+
+function nextLevel() {
+    if (currentLevel < levels.length - 1) {
+        currentLevel++;
+        startLevel();
+    } else {
+        showLevels();
+    }
+}
+
+// Start
+gameLoop();
+    </script>
+</body>
+</html>
