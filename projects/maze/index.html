@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>迷宫大冒险</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        .game-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 12px;
+            padding: 10px 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #ffd700; }
+        .stat-label { font-size: 12px; color: #888; }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(100, 200, 255, 0.15);
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .overlay.hidden { display: none; }
+        .menu {
+            text-align: center;
+            background: rgba(20,20,50,0.95);
+            padding: 40px 50px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 420px;
+        }
+        .menu h1 {
+            font-size: 38px;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+        }
+        .menu h2 { font-size: 28px; color: #ffd700; margin-bottom: 10px; }
+        .menu p { color: #aaa; margin-bottom: 20px; font-size: 15px; line-height: 1.6; }
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            margin: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-play {
+            background: linear-gradient(135deg, #4ecdc4, #44bd9e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+        }
+        .btn-next {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+        .controls-hint {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .legend {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #888;
+            text-align: left;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .legend div { margin: 3px 0; }
+        .win-time { font-size: 18px; color: #4ecdc4; margin: 5px 0 15px; }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <div class="stat">
+            <div class="stat-value" id="level-display">1</div>
+            <div class="stat-label">关卡</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="keys-display">0/0</div>
+            <div class="stat-label">钥匙</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="time-display">0:00</div>
+            <div class="stat-label">用时</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="gems-display">0</div>
+            <div class="stat-label">宝石</div>
+        </div>
+    </div>
+    <canvas id="game"></canvas>
+
+    <div class="overlay" id="start-overlay">
+        <div class="menu">
+            <h1>迷宫大冒险</h1>
+            <p>探索迷宫，收集钥匙打开大门，<br>找到出口逃离迷宫！<br>小心迷宫里的追踪怪物！</p>
+            <button class="btn btn-play" onclick="startGame()">开始探索</button>
+            <div class="controls-hint">
+                <p>方向键 或 WASD 移动</p>
+            </div>
+            <div class="legend">
+                <div>🟡 你的角色</div>
+                <div>🔑 钥匙 - 收集所有钥匙才能开门</div>
+                <div>🚪 出口 - 集齐钥匙后到达这里过关</div>
+                <div>💎 宝石 - 额外收集品</div>
+                <div>👻 怪物 - 会追踪你，碰到要重来！</div>
+                <div>💡 火把 - 照亮更大范围</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="win-overlay">
+        <div class="menu">
+            <h2>关卡通过！</h2>
+            <div class="win-time" id="win-time"></div>
+            <p id="win-gems"></p>
+            <button class="btn btn-next" onclick="nextLevel()">下一关</button>
+            <button class="btn btn-play" onclick="showStart()" style="font-size:14px;padding:10px 20px;">返回主页</button>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="dead-overlay">
+        <div class="menu">
+            <h2 style="color:#ff6b6b;">被怪物抓到了！</h2>
+            <p>别灰心，再试一次！</p>
+            <button class="btn btn-play" onclick="retryLevel()">重试</button>
+        </div>
+    </div>
+
+    <script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const CELL = 28;
+let COLS, ROWS;
+let maze, player, keys_arr, gems, enemies, exit_pos, totalKeys, collectedKeys, collectedGems;
+let currentLevel = 0;
+let running = false;
+let startTime, elapsed;
+let viewRadius = 5;
+let particles = [];
+let animFrame;
+
+// Level configs: size increases, more enemies
+const levelConfigs = [
+    { cols: 21, rows: 17, keys: 2, enemies: 1, gems: 3, viewRadius: 6 },
+    { cols: 23, rows: 17, keys: 3, enemies: 1, gems: 4, viewRadius: 5.5 },
+    { cols: 25, rows: 19, keys: 3, enemies: 2, gems: 5, viewRadius: 5 },
+    { cols: 27, rows: 19, keys: 4, enemies: 2, gems: 5, viewRadius: 5 },
+    { cols: 29, rows: 21, keys: 4, enemies: 3, gems: 6, viewRadius: 4.5 },
+    { cols: 31, rows: 21, keys: 5, enemies: 3, gems: 6, viewRadius: 4 },
+    { cols: 33, rows: 23, keys: 5, enemies: 4, gems: 7, viewRadius: 4 },
+    { cols: 35, rows: 23, keys: 6, enemies: 4, gems: 8, viewRadius: 3.5 },
+];
+
+// Input
+window.addEventListener('keydown', e => {
+    if (!running) return;
+    let dx = 0, dy = 0;
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') dy = -1;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') dy = 1;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') dx = -1;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') dx = 1;
+    if (dx !== 0 || dy !== 0) {
+        e.preventDefault();
+        movePlayer(dx, dy);
+    }
+});
+
+// Touch
+let touchStart = null;
+canvas.addEventListener('touchstart', e => { touchStart = {x:e.touches[0].clientX, y:e.touches[0].clientY}; e.preventDefault(); });
+canvas.addEventListener('touchend', e => {
+    if (!touchStart || !running) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        movePlayer(dx > 20 ? 1 : dx < -20 ? -1 : 0, 0);
+    } else {
+        movePlayer(0, dy > 20 ? 1 : dy < -20 ? -1 : 0);
+    }
+    touchStart = null;
+});
+
+// Maze generation using recursive backtracking
+function generateMaze(cols, rows) {
+    // Init grid: 1 = wall, 0 = path
+    const grid = Array.from({length: rows}, () => Array(cols).fill(1));
+
+    function carve(x, y) {
+        grid[y][x] = 0;
+        const dirs = [{dx:0,dy:-2},{dx:0,dy:2},{dx:-2,dy:0},{dx:2,dy:0}];
+        shuffle(dirs);
+        for (const d of dirs) {
+            const nx = x + d.dx, ny = y + d.dy;
+            if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && grid[ny][nx] === 1) {
+                grid[y + d.dy/2][x + d.dx/2] = 0;
+                carve(nx, ny);
+            }
+        }
+    }
+
+    carve(1, 1);
+
+    // Add some extra paths for more openness
+    for (let i = 0; i < Math.floor(cols * rows * 0.03); i++) {
+        const x = 1 + Math.floor(Math.random() * (cols-2));
+        const y = 1 + Math.floor(Math.random() * (rows-2));
+        if (grid[y][x] === 1) {
+            // Check if removing this wall doesn't break things
+            let neighbors = 0;
+            if (y > 0 && grid[y-1][x] === 0) neighbors++;
+            if (y < rows-1 && grid[y+1][x] === 0) neighbors++;
+            if (x > 0 && grid[y][x-1] === 0) neighbors++;
+            if (x < cols-1 && grid[y][x+1] === 0) neighbors++;
+            if (neighbors >= 2) grid[y][x] = 0;
+        }
+    }
+
+    return grid;
+}
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+}
+
+function getOpenCells() {
+    const cells = [];
+    for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < COLS; x++)
+            if (maze[y][x] === 0) cells.push({x, y});
+    return cells;
+}
+
+function dist(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+
+function loadLevel(idx) {
+    const config = levelConfigs[Math.min(idx, levelConfigs.length - 1)];
+    COLS = config.cols;
+    ROWS = config.rows;
+    canvas.width = COLS * CELL;
+    canvas.height = ROWS * CELL;
+    viewRadius = config.viewRadius;
+
+    maze = generateMaze(COLS, ROWS);
+    player = {x: 1, y: 1};
+
+    const openCells = getOpenCells().filter(c => !(c.x === 1 && c.y === 1));
+
+    // Place exit far from player
+    openCells.sort((a, b) => dist(b, player) - dist(a, player));
+    exit_pos = openCells[0];
+
+    // Place keys
+    const keyCandidates = openCells.filter(c => dist(c, player) > 5 && dist(c, exit_pos) > 3);
+    shuffle(keyCandidates);
+    keys_arr = keyCandidates.slice(0, config.keys).map(c => ({...c, collected: false}));
+    totalKeys = config.keys;
+    collectedKeys = 0;
+
+    // Place gems
+    const gemCandidates = openCells.filter(c =>
+        !keys_arr.some(k => k.x === c.x && k.y === c.y) &&
+        !(c.x === exit_pos.x && c.y === exit_pos.y) &&
+        dist(c, player) > 3
+    );
+    shuffle(gemCandidates);
+    gems = gemCandidates.slice(0, config.gems).map(c => ({...c, collected: false}));
+    collectedGems = 0;
+
+    // Place enemies far from player
+    const enemyCandidates = openCells.filter(c => dist(c, player) > 8);
+    shuffle(enemyCandidates);
+    enemies = enemyCandidates.slice(0, config.enemies).map(c => ({
+        x: c.x, y: c.y, moveTimer: 0, moveInterval: 12 + Math.floor(Math.random() * 8)
+    }));
+
+    particles = [];
+    startTime = Date.now();
+    updateHUD();
+}
+
+function movePlayer(dx, dy) {
+    const nx = player.x + dx;
+    const ny = player.y + dy;
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+    if (maze[ny][nx] === 1) return;
+
+    player.x = nx;
+    player.y = ny;
+
+    // Collect keys
+    for (let k of keys_arr) {
+        if (!k.collected && k.x === nx && k.y === ny) {
+            k.collected = true;
+            collectedKeys++;
+            spawnParticles(nx * CELL + CELL/2, ny * CELL + CELL/2, '#ffd700', 10);
+        }
+    }
+
+    // Collect gems
+    for (let g of gems) {
+        if (!g.collected && g.x === nx && g.y === ny) {
+            g.collected = true;
+            collectedGems++;
+            spawnParticles(nx * CELL + CELL/2, ny * CELL + CELL/2, '#e040fb', 6);
+        }
+    }
+
+    // Check exit
+    if (nx === exit_pos.x && ny === exit_pos.y && collectedKeys >= totalKeys) {
+        winLevel();
+    }
+
+    // Check enemy collision
+    checkEnemyCollision();
+    updateHUD();
+}
+
+function moveEnemies() {
+    for (let enemy of enemies) {
+        enemy.moveTimer++;
+        if (enemy.moveTimer < enemy.moveInterval) continue;
+        enemy.moveTimer = 0;
+
+        // Simple pathfinding towards player
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        let moves = [];
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            moves.push({dx: Math.sign(dx), dy: 0});
+            moves.push({dx: 0, dy: Math.sign(dy)});
+        } else {
+            moves.push({dx: 0, dy: Math.sign(dy)});
+            moves.push({dx: Math.sign(dx), dy: 0});
+        }
+        // Add random direction
+        const allDirs = [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
+        shuffle(allDirs);
+        moves = moves.concat(allDirs);
+
+        for (let m of moves) {
+            const nx = enemy.x + m.dx;
+            const ny = enemy.y + m.dy;
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && maze[ny][nx] === 0) {
+                enemy.x = nx;
+                enemy.y = ny;
+                break;
+            }
+        }
+    }
+    checkEnemyCollision();
+}
+
+function checkEnemyCollision() {
+    for (let enemy of enemies) {
+        if (enemy.x === player.x && enemy.y === player.y) {
+            die();
+        }
+    }
+}
+
+function die() {
+    running = false;
+    spawnParticles(player.x * CELL + CELL/2, player.y * CELL + CELL/2, '#ff4444', 15);
+    setTimeout(() => {
+        document.getElementById('dead-overlay').classList.remove('hidden');
+    }, 400);
+}
+
+function winLevel() {
+    running = false;
+    elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById('win-time').textContent = `用时: ${elapsed}秒`;
+    document.getElementById('win-gems').textContent = `收集宝石: ${collectedGems}/${gems.length}`;
+    spawnParticles(player.x * CELL + CELL/2, player.y * CELL + CELL/2, '#4ecdc4', 20);
+    setTimeout(() => {
+        document.getElementById('win-overlay').classList.remove('hidden');
+    }, 400);
+}
+
+function updateHUD() {
+    document.getElementById('level-display').textContent = currentLevel + 1;
+    document.getElementById('keys-display').textContent = `${collectedKeys}/${totalKeys}`;
+    document.getElementById('gems-display').textContent = collectedGems;
+    if (running) {
+        const t = ((Date.now() - startTime) / 1000) | 0;
+        const m = (t / 60) | 0;
+        const s = t % 60;
+        document.getElementById('time-display').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }
+}
+
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random()-0.5) * 6,
+            vy: (Math.random()-0.5) * 6,
+            life: 30 + Math.random() * 20,
+            color, size: 3 + Math.random() * 4
+        });
+    }
+}
+
+// Drawing
+function draw() {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate visibility
+    const px = player.x, py = player.y;
+
+    // Draw maze with fog of war
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            const d = Math.sqrt((x-px)*(x-px) + (y-py)*(y-py));
+            if (d > viewRadius + 2) continue;
+
+            let alpha = 1;
+            if (d > viewRadius) alpha = Math.max(0, 1 - (d - viewRadius) / 2);
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+
+            if (maze[y][x] === 1) {
+                // Wall
+                const grad = ctx.createLinearGradient(x*CELL, y*CELL, x*CELL+CELL, y*CELL+CELL);
+                grad.addColorStop(0, '#2d2d5e');
+                grad.addColorStop(1, '#1e1e4a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+                // Wall edge
+                ctx.strokeStyle = 'rgba(100,100,180,0.3)';
+                ctx.strokeRect(x*CELL, y*CELL, CELL, CELL);
+            } else {
+                // Floor
+                ctx.fillStyle = '#16213e';
+                ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+                // Subtle floor pattern
+                if ((x+y) % 2 === 0) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+                    ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+                }
+            }
+            ctx.restore();
+        }
+    }
+
+    // Draw items (only if visible)
+    // Keys
+    for (let k of keys_arr) {
+        if (k.collected) continue;
+        const d = Math.sqrt((k.x-px)*(k.x-px) + (k.y-py)*(k.y-py));
+        if (d > viewRadius + 1) continue;
+        ctx.save();
+        ctx.globalAlpha = d > viewRadius ? Math.max(0, 1-(d-viewRadius)) : 1;
+        const bob = Math.sin(Date.now() * 0.004 + k.x * 2) * 2;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔑', k.x * CELL + CELL/2, k.y * CELL + CELL/2 + bob);
+        ctx.restore();
+    }
+
+    // Gems
+    for (let g of gems) {
+        if (g.collected) continue;
+        const d = Math.sqrt((g.x-px)*(g.x-px) + (g.y-py)*(g.y-py));
+        if (d > viewRadius + 1) continue;
+        ctx.save();
+        ctx.globalAlpha = d > viewRadius ? Math.max(0, 1-(d-viewRadius)) : 1;
+        const bob = Math.sin(Date.now() * 0.005 + g.x) * 2;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💎', g.x * CELL + CELL/2, g.y * CELL + CELL/2 + bob);
+        ctx.restore();
+    }
+
+    // Exit
+    {
+        const d = Math.sqrt((exit_pos.x-px)*(exit_pos.x-px) + (exit_pos.y-py)*(exit_pos.y-py));
+        if (d <= viewRadius + 1) {
+            ctx.save();
+            ctx.globalAlpha = d > viewRadius ? Math.max(0, 1-(d-viewRadius)) : 1;
+            // Glow if unlocked
+            if (collectedKeys >= totalKeys) {
+                ctx.shadowColor = '#4ecdc4';
+                ctx.shadowBlur = 15;
+            }
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(collectedKeys >= totalKeys ? '🚪' : '🔒',
+                exit_pos.x * CELL + CELL/2, exit_pos.y * CELL + CELL/2);
+            ctx.restore();
+        }
+    }
+
+    // Enemies
+    for (let enemy of enemies) {
+        const d = Math.sqrt((enemy.x-px)*(enemy.x-px) + (enemy.y-py)*(enemy.y-py));
+        if (d > viewRadius + 1) continue;
+        ctx.save();
+        ctx.globalAlpha = d > viewRadius ? Math.max(0, 1-(d-viewRadius)) : 1;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const wobble = Math.sin(Date.now() * 0.008) * 1.5;
+        ctx.fillText('👻', enemy.x * CELL + CELL/2, enemy.y * CELL + CELL/2 + wobble);
+        ctx.restore();
+    }
+
+    // Player
+    ctx.save();
+    ctx.shadowColor = '#4ecdc4';
+    ctx.shadowBlur = 12;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🧑', px * CELL + CELL/2, py * CELL + CELL/2);
+    ctx.restore();
+
+    // Fog overlay (darken edges)
+    const fogGrad = ctx.createRadialGradient(
+        px * CELL + CELL/2, py * CELL + CELL/2, viewRadius * CELL * 0.6,
+        px * CELL + CELL/2, py * CELL + CELL/2, viewRadius * CELL * 1.2
+    );
+    fogGrad.addColorStop(0, 'rgba(26, 26, 46, 0)');
+    fogGrad.addColorStop(1, 'rgba(26, 26, 46, 0.95)');
+    ctx.fillStyle = fogGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= 0.92; p.vy *= 0.92;
+        p.life--; p.size *= 0.95;
+        ctx.save();
+        ctx.globalAlpha = p.life / 50;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        ctx.restore();
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // HUD timer update
+    if (running) updateHUD();
+
+    animFrame = requestAnimationFrame(draw);
+}
+
+// Game loop for enemies
+let enemyInterval;
+
+function startGame() {
+    currentLevel = 0;
+    startLevel();
+}
+
+function startLevel() {
+    loadLevel(currentLevel);
+    running = true;
+    document.getElementById('start-overlay').classList.add('hidden');
+    document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('dead-overlay').classList.add('hidden');
+    if (enemyInterval) clearInterval(enemyInterval);
+    enemyInterval = setInterval(() => { if (running) moveEnemies(); }, 200);
+    if (animFrame) cancelAnimationFrame(animFrame);
+    draw();
+}
+
+function nextLevel() {
+    currentLevel++;
+    startLevel();
+}
+
+function retryLevel() {
+    startLevel();
+}
+
+function showStart() {
+    running = false;
+    document.getElementById('win-overlay').classList.add('hidden');
+    document.getElementById('dead-overlay').classList.add('hidden');
+    document.getElementById('start-overlay').classList.remove('hidden');
+}
+
+// Init
+draw();
+    </script>
+</body>
+</html>

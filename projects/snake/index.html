@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩虹贪吃蛇</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f0f23;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        .game-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 15px;
+            padding: 10px 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+        .stat { text-align: center; }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .stat-label { font-size: 12px; color: #888; }
+        canvas {
+            border-radius: 10px;
+            box-shadow: 0 0 40px rgba(100, 200, 255, 0.2);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .overlay.hidden { display: none; }
+        .menu {
+            text-align: center;
+            background: rgba(20,20,50,0.95);
+            padding: 40px 50px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .menu h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .menu p { color: #aaa; margin-bottom: 25px; font-size: 16px; }
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            margin: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-play {
+            background: linear-gradient(135deg, #6bcb77, #4d96ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(75, 150, 255, 0.4);
+        }
+        .btn-restart {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        .controls-hint {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .powerup-info {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #888;
+            text-align: left;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .powerup-info div { margin: 4px 0; }
+        .game-over-score {
+            font-size: 60px;
+            font-weight: bold;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+        .high-score { color: #ff6b6b; font-size: 16px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <div class="stat">
+            <div class="stat-value" id="score">0</div>
+            <div class="stat-label">分数</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="level">1</div>
+            <div class="stat-label">等级</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="best">0</div>
+            <div class="stat-label">最高分</div>
+        </div>
+    </div>
+    <canvas id="game"></canvas>
+
+    <div class="overlay" id="start-overlay">
+        <div class="menu">
+            <h1>彩虹贪吃蛇</h1>
+            <p>吃水果变长，收集道具获得超能力！</p>
+            <button class="btn btn-play" onclick="startGame()">开始游戏</button>
+            <div class="controls-hint">
+                <p>方向键 或 WASD 控制方向</p>
+                <p>手机端可触屏滑动</p>
+            </div>
+            <div class="powerup-info">
+                <div>🍎 普通水果 +10分</div>
+                <div>🍊 橙子 +20分</div>
+                <div>⭐ 星星 +50分 加速</div>
+                <div>💎 钻石 +100分 穿墙3秒</div>
+                <div>🛡️ 护盾 防一次撞墙</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="gameover-overlay">
+        <div class="menu">
+            <h1>游戏结束</h1>
+            <div class="game-over-score" id="final-score">0</div>
+            <div class="high-score" id="high-score-text"></div>
+            <button class="btn btn-restart" onclick="startGame()">再来一次</button>
+            <button class="btn btn-play" onclick="showStart()">返回主页</button>
+        </div>
+    </div>
+
+    <script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const CELL = 20;
+const COLS = 30;
+const ROWS = 25;
+canvas.width = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+let snake, direction, nextDir, food, powerups, score, level, speed;
+let gameLoop, running, particles, effects;
+let highScore = parseInt(localStorage.getItem('snake_high') || '0');
+let shield = false;
+let ghostMode = false;
+let ghostTimer = 0;
+let speedBoost = false;
+let speedTimer = 0;
+
+document.getElementById('best').textContent = highScore;
+
+// Input
+const keys = {};
+window.addEventListener('keydown', e => {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)) {
+        e.preventDefault();
+    }
+    if ((e.code === 'ArrowUp' || e.code === 'KeyW') && direction.y === 0) nextDir = {x:0,y:-1};
+    if ((e.code === 'ArrowDown' || e.code === 'KeyS') && direction.y === 0) nextDir = {x:0,y:1};
+    if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && direction.x === 0) nextDir = {x:-1,y:0};
+    if ((e.code === 'ArrowRight' || e.code === 'KeyD') && direction.x === 0) nextDir = {x:1,y:0};
+});
+
+// Touch support
+let touchStart = null;
+canvas.addEventListener('touchstart', e => { touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY}; e.preventDefault(); });
+canvas.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+canvas.addEventListener('touchend', e => {
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30 && direction.x === 0) nextDir = {x:1,y:0};
+        else if (dx < -30 && direction.x === 0) nextDir = {x:-1,y:0};
+    } else {
+        if (dy > 30 && direction.y === 0) nextDir = {x:0,y:1};
+        else if (dy < -30 && direction.y === 0) nextDir = {x:0,y:-1};
+    }
+    touchStart = null;
+});
+
+function startGame() {
+    snake = [{x:10,y:12},{x:9,y:12},{x:8,y:12}];
+    direction = {x:1,y:0};
+    nextDir = {x:1,y:0};
+    score = 0;
+    level = 1;
+    speed = 120;
+    shield = false;
+    ghostMode = false;
+    ghostTimer = 0;
+    speedBoost = false;
+    speedTimer = 0;
+    particles = [];
+    effects = [];
+    food = spawnFood();
+    powerups = [];
+    running = true;
+
+    document.getElementById('start-overlay').classList.add('hidden');
+    document.getElementById('gameover-overlay').classList.add('hidden');
+    updateHUD();
+
+    if (gameLoop) clearInterval(gameLoop);
+    gameLoop = setInterval(tick, speed);
+    requestAnimationFrame(draw);
+}
+
+function showStart() {
+    document.getElementById('gameover-overlay').classList.add('hidden');
+    document.getElementById('start-overlay').classList.remove('hidden');
+}
+
+function spawnFood() {
+    let pos;
+    do {
+        pos = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+    } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+
+    // Different fruit types
+    const r = Math.random();
+    if (r < 0.6) pos.type = 'apple';
+    else if (r < 0.85) pos.type = 'orange';
+    else pos.type = 'star';
+    return pos;
+}
+
+function spawnPowerup() {
+    if (powerups.length >= 2) return;
+    if (Math.random() > 0.3) return;
+    let pos;
+    do {
+        pos = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+    } while (snake.some(s => s.x === pos.x && s.y === pos.y) || (food.x === pos.x && food.y === pos.y));
+
+    const r = Math.random();
+    if (r < 0.5) pos.type = 'diamond';
+    else pos.type = 'shield';
+    pos.life = 200;
+    powerups.push(pos);
+}
+
+function tick() {
+    if (!running) return;
+
+    direction = {...nextDir};
+
+    // Move head
+    const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+
+    // Ghost mode: wrap around walls
+    if (ghostMode) {
+        if (head.x < 0) head.x = COLS - 1;
+        if (head.x >= COLS) head.x = 0;
+        if (head.y < 0) head.y = ROWS - 1;
+        if (head.y >= ROWS) head.y = 0;
+    }
+
+    // Wall collision
+    if (!ghostMode && (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS)) {
+        if (shield) {
+            shield = false;
+            // Bounce back
+            direction.x = -direction.x;
+            direction.y = -direction.y;
+            nextDir = {...direction};
+            addEffect('护盾破碎！', '#ff6b6b');
+            spawnParticles(snake[0].x * CELL + CELL/2, snake[0].y * CELL + CELL/2, '#ff6b6b', 10);
+            return;
+        }
+        gameOver();
+        return;
+    }
+
+    // Self collision
+    if (snake.some(s => s.x === head.x && s.y === head.y)) {
+        if (shield) {
+            shield = false;
+            addEffect('护盾破碎！', '#ff6b6b');
+            return;
+        }
+        gameOver();
+        return;
+    }
+
+    snake.unshift(head);
+
+    // Eat food
+    let ate = false;
+    if (head.x === food.x && head.y === food.y) {
+        ate = true;
+        let pts = 10;
+        if (food.type === 'orange') pts = 20;
+        if (food.type === 'star') { pts = 50; speedBoost = true; speedTimer = 50; }
+        score += pts;
+        spawnParticles(head.x * CELL + CELL/2, head.y * CELL + CELL/2, '#ffd700', 8);
+        addEffect(`+${pts}`, '#ffd700');
+        food = spawnFood();
+        spawnPowerup();
+
+        // Level up every 100 points
+        const newLevel = Math.floor(score / 100) + 1;
+        if (newLevel > level) {
+            level = newLevel;
+            speed = Math.max(50, 120 - (level - 1) * 8);
+            clearInterval(gameLoop);
+            gameLoop = setInterval(tick, speed);
+            addEffect(`等级 ${level}！`, '#4d96ff');
+        }
+    }
+
+    // Eat powerup
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        if (head.x === powerups[i].x && head.y === powerups[i].y) {
+            const pu = powerups[i];
+            if (pu.type === 'diamond') {
+                score += 100;
+                ghostMode = true;
+                ghostTimer = 80;
+                addEffect('+100 穿墙！', '#e040fb');
+                spawnParticles(head.x * CELL + CELL/2, head.y * CELL + CELL/2, '#e040fb', 12);
+            } else if (pu.type === 'shield') {
+                shield = true;
+                addEffect('获得护盾！', '#00bcd4');
+                spawnParticles(head.x * CELL + CELL/2, head.y * CELL + CELL/2, '#00bcd4', 8);
+            }
+            powerups.splice(i, 1);
+            ate = true;
+        }
+    }
+
+    if (!ate) snake.pop();
+
+    // Timers
+    if (ghostMode) { ghostTimer--; if (ghostTimer <= 0) ghostMode = false; }
+    if (speedBoost) { speedTimer--; if (speedTimer <= 0) speedBoost = false; }
+
+    // Powerup lifetime
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        powerups[i].life--;
+        if (powerups[i].life <= 0) powerups.splice(i, 1);
+    }
+
+    updateHUD();
+}
+
+function gameOver() {
+    running = false;
+    clearInterval(gameLoop);
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('snake_high', highScore);
+        document.getElementById('high-score-text').textContent = '🎉 新纪录！';
+    } else {
+        document.getElementById('high-score-text').textContent = `最高分: ${highScore}`;
+    }
+    document.getElementById('final-score').textContent = score;
+    document.getElementById('best').textContent = highScore;
+    setTimeout(() => {
+        document.getElementById('gameover-overlay').classList.remove('hidden');
+    }, 500);
+}
+
+function updateHUD() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('level').textContent = level;
+}
+
+// Particles
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random()-0.5) * 8,
+            vy: (Math.random()-0.5) * 8,
+            life: 25 + Math.random() * 15,
+            color,
+            size: 3 + Math.random() * 4
+        });
+    }
+}
+
+function addEffect(text, color) {
+    effects.push({text, color, y: canvas.height/2, alpha: 1, life: 60});
+}
+
+// Drawing
+function draw() {
+    ctx.fillStyle = '#0f0f23';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Grid (subtle)
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    for (let x = 0; x < COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
+    }
+
+    // Ghost mode border effect
+    if (ghostMode) {
+        ctx.strokeStyle = `rgba(224, 64, 251, ${0.3 + Math.sin(Date.now()*0.01)*0.2})`;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(1, 1, canvas.width-2, canvas.height-2);
+        ctx.lineWidth = 1;
+    }
+
+    // Draw food
+    drawFood();
+
+    // Draw powerups
+    for (let pu of powerups) {
+        ctx.save();
+        const px = pu.x * CELL + CELL/2;
+        const py = pu.y * CELL + CELL/2;
+        const bob = Math.sin(Date.now() * 0.005 + pu.x) * 2;
+
+        // Glow
+        ctx.shadowColor = pu.type === 'diamond' ? '#e040fb' : '#00bcd4';
+        ctx.shadowBlur = 10;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pu.type === 'diamond' ? '💎' : '🛡️', px, py + bob);
+
+        // Blink when about to disappear
+        if (pu.life < 50 && Math.floor(pu.life / 5) % 2 === 0) {
+            ctx.globalAlpha = 0.3;
+        }
+        ctx.restore();
+    }
+
+    // Draw snake
+    drawSnake();
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.life--;
+        p.size *= 0.96;
+        ctx.save();
+        ctx.globalAlpha = p.life / 40;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        ctx.restore();
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // Effects
+    for (let i = effects.length - 1; i >= 0; i--) {
+        const e = effects[i];
+        e.y -= 1.5;
+        e.life--;
+        e.alpha = e.life / 60;
+        ctx.save();
+        ctx.globalAlpha = e.alpha;
+        ctx.fillStyle = e.color;
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.text, canvas.width/2, e.y);
+        ctx.restore();
+        if (e.life <= 0) effects.splice(i, 1);
+    }
+
+    // Shield indicator
+    if (shield) {
+        ctx.save();
+        const hx = snake[0].x * CELL + CELL/2;
+        const hy = snake[0].y * CELL + CELL/2;
+        ctx.strokeStyle = `rgba(0, 188, 212, ${0.5 + Math.sin(Date.now()*0.008)*0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(hx, hy, CELL * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    requestAnimationFrame(draw);
+}
+
+function drawFood() {
+    const fx = food.x * CELL + CELL/2;
+    const fy = food.y * CELL + CELL/2;
+    const bob = Math.sin(Date.now() * 0.005) * 2;
+
+    ctx.save();
+    ctx.shadowColor = food.type === 'star' ? '#ffd700' : '#ff4444';
+    ctx.shadowBlur = 8;
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let emoji = '🍎';
+    if (food.type === 'orange') emoji = '🍊';
+    if (food.type === 'star') emoji = '⭐';
+    ctx.fillText(emoji, fx, fy + bob);
+    ctx.restore();
+}
+
+function drawSnake() {
+    for (let i = snake.length - 1; i >= 0; i--) {
+        const seg = snake[i];
+        const x = seg.x * CELL;
+        const y = seg.y * CELL;
+        const t = i / snake.length;
+
+        // Rainbow color based on position
+        const hue = (i * 12 + Date.now() * 0.05) % 360;
+        const saturation = ghostMode ? '60%' : '75%';
+        const lightness = i === 0 ? '60%' : '50%';
+
+        ctx.save();
+        if (ghostMode) ctx.globalAlpha = 0.7;
+
+        ctx.fillStyle = `hsl(${hue}, ${saturation}, ${lightness})`;
+        const padding = i === 0 ? 1 : 2;
+        const radius = i === 0 ? 5 : 3;
+
+        // Rounded rect
+        const rx = x + padding;
+        const ry = y + padding;
+        const rw = CELL - padding * 2;
+        const rh = CELL - padding * 2;
+        ctx.beginPath();
+        ctx.moveTo(rx + radius, ry);
+        ctx.lineTo(rx + rw - radius, ry);
+        ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + radius);
+        ctx.lineTo(rx + rw, ry + rh - radius);
+        ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - radius, ry + rh);
+        ctx.lineTo(rx + radius, ry + rh);
+        ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - radius);
+        ctx.lineTo(rx, ry + radius);
+        ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
+        ctx.fill();
+
+        // Head eyes
+        if (i === 0) {
+            ctx.fillStyle = '#fff';
+            const ex = direction.x * 3;
+            const ey = direction.y * 3;
+            ctx.beginPath();
+            ctx.arc(x + CELL/2 - 4 + ex, y + CELL/2 - 2 + ey, 3, 0, Math.PI*2);
+            ctx.arc(x + CELL/2 + 4 + ex, y + CELL/2 - 2 + ey, 3, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(x + CELL/2 - 4 + ex*1.2, y + CELL/2 - 2 + ey*1.2, 1.5, 0, Math.PI*2);
+            ctx.arc(x + CELL/2 + 4 + ex*1.2, y + CELL/2 - 2 + ey*1.2, 1.5, 0, Math.PI*2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+// Init
+draw();
+    </script>
+</body>
+</html>
