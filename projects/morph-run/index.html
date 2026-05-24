@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>变形跑酷</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(0, 200, 255, 0.2);
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .overlay.hidden { display: none; }
+        .menu {
+            text-align: center;
+            background: rgba(13,17,23,0.95);
+            padding: 40px 50px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,200,255,0.2);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 480px;
+        }
+        .menu h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7, #ff0080);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .menu h2 { font-size: 30px; color: #00d4ff; margin-bottom: 10px; }
+        .menu p { color: #aaa; margin-bottom: 20px; font-size: 15px; line-height: 1.6; }
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            margin: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-play {
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+        }
+        .btn-retry {
+            background: linear-gradient(135deg, #ff0080, #7b2ff7);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255,0,128,0.4);
+        }
+        .score-big { font-size: 50px; color: #00d4ff; font-weight: bold; margin: 10px 0; }
+        .info-text { font-size: 14px; color: #888; margin-bottom: 10px; }
+        .controls-hint { margin-top: 15px; font-size: 13px; color: #666; line-height: 2; }
+        .form-guide {
+            margin-top: 15px;
+            text-align: left;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #999;
+        }
+        .form-guide div { margin: 4px 0; display: flex; align-items: center; gap: 8px; }
+        .form-icon { width: 20px; height: 12px; display: inline-block; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+
+    <div class="overlay" id="start-overlay">
+        <div class="menu">
+            <h1>变形跑酷</h1>
+            <p>遇到不同障碍需要变换形态才能通过！<br>变错了就会撞上去哦！</p>
+            <button class="btn btn-play" onclick="startGame()">开始跑酷</button>
+            <div class="controls-hint">
+                <p>↑ 或 W — 变高（跳过低矮障碍）</p>
+                <p>↓ 或 S — 变扁（滑过头顶障碍）</p>
+                <p>← 或 A — 变小（穿过窄缝）</p>
+                <p>→ 或 D — 变大（撞碎脆弱障碍）</p>
+                <p>不按键 = 普通形态</p>
+            </div>
+            <div class="form-guide">
+                <div><span class="form-icon" style="background:#00d4ff;height:20px;width:16px;"></span> 普通 — 默认状态</div>
+                <div><span class="form-icon" style="background:#00ff88;height:24px;width:12px;"></span> 变高 — 跳过地面尖刺</div>
+                <div><span class="form-icon" style="background:#ffbe0b;height:8px;width:24px;"></span> 变扁 — 滑过高处横梁</div>
+                <div><span class="form-icon" style="background:#ff006e;height:10px;width:10px;"></span> 变小 — 穿过窄缝</div>
+                <div><span class="form-icon" style="background:#7b2ff7;height:20px;width:24px;"></span> 变大 — 撞碎木墙</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="dead-overlay">
+        <div class="menu">
+            <h2 style="color:#ff0080;">撞到了！</h2>
+            <div class="score-big" id="final-dist">0m</div>
+            <div class="info-text" id="best-text"></div>
+            <p id="tip-text" style="font-size:13px;color:#666;"></p>
+            <button class="btn btn-play" onclick="startGame()">再来一次</button>
+            <button class="btn btn-retry" onclick="showStart()">返回主页</button>
+        </div>
+    </div>
+
+    <script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = 900;
+canvas.height = 500;
+
+const GROUND_Y = 400;
+let running = false;
+let score, distance, speed, baseSpeed, obstacles, particles, warnings;
+let player, currentForm, targetForm, formTimer;
+let highScore = parseInt(localStorage.getItem('morph_high') || '0');
+let frameCount = 0;
+
+// Forms: normal, tall, flat, small, big
+const FORMS = {
+    normal: { w: 30, h: 35, color: '#00d4ff', name: '普通' },
+    tall:   { w: 20, h: 55, color: '#00ff88', name: '变高' },
+    flat:   { w: 45, h: 15, color: '#ffbe0b', name: '变扁' },
+    small:  { w: 16, h: 16, color: '#ff006e', name: '变小' },
+    big:    { w: 45, h: 40, color: '#7b2ff7', name: '变大' },
+};
+
+// Obstacle types and which form can pass
+// low_spike: need 'tall' to jump over
+// beam: need 'flat' to slide under
+// narrow: need 'small' to fit through
+// breakable: need 'big' to smash
+const OBSTACLE_TYPES = [
+    { type: 'low_spike', solution: 'tall', hint: '变高跳过！', w: 50, h: 20 },
+    { type: 'beam', solution: 'flat', hint: '变扁滑过！', w: 80, h: 20 },
+    { type: 'narrow', solution: 'small', hint: '变小穿过！', w: 30, h: 100 },
+    { type: 'breakable', solution: 'big', hint: '变大撞碎！', w: 25, h: 60 },
+];
+
+// Input
+const keys = {};
+window.addEventListener('keydown', e => {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+    }
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// Touch buttons (for mobile)
+let touchForm = 'normal';
+
+function getForm() {
+    if (keys['ArrowUp'] || keys['KeyW']) return 'tall';
+    if (keys['ArrowDown'] || keys['KeyS']) return 'flat';
+    if (keys['ArrowLeft'] || keys['KeyA']) return 'small';
+    if (keys['ArrowRight'] || keys['KeyD']) return 'big';
+    return 'normal';
+}
+
+function startGame() {
+    speed = 5;
+    baseSpeed = 5;
+    distance = 0;
+    score = 0;
+    frameCount = 0;
+    currentForm = 'normal';
+    targetForm = 'normal';
+    formTimer = 0;
+
+    player = {
+        x: 150,
+        y: GROUND_Y - FORMS.normal.h,
+        w: FORMS.normal.w,
+        h: FORMS.normal.h,
+        targetW: FORMS.normal.w,
+        targetH: FORMS.normal.h,
+        morphProgress: 0
+    };
+
+    obstacles = [];
+    particles = [];
+    warnings = [];
+    running = true;
+
+    document.getElementById('start-overlay').classList.add('hidden');
+    document.getElementById('dead-overlay').classList.add('hidden');
+
+    scheduleObstacle();
+    requestAnimationFrame(gameLoop);
+}
+
+function showStart() {
+    running = false;
+    document.getElementById('dead-overlay').classList.add('hidden');
+    document.getElementById('start-overlay').classList.remove('hidden');
+}
+
+let nextObstacleIn = 120;
+function scheduleObstacle() {
+    // Gradually decrease gap
+    const minGap = Math.max(60, 120 - distance * 0.01);
+    const maxGap = Math.max(90, 180 - distance * 0.015);
+    nextObstacleIn = minGap + Math.random() * (maxGap - minGap);
+}
+
+function spawnObstacle() {
+    // Choose type, more variety as game progresses
+    let available = OBSTACLE_TYPES.slice(0, Math.min(4, 2 + Math.floor(distance / 500)));
+    const template = available[Math.floor(Math.random() * available.length)];
+
+    let obs = {
+        x: canvas.width + 50,
+        type: template.type,
+        solution: template.solution,
+        hint: template.hint,
+        w: template.w,
+        h: template.h,
+        passed: false,
+        broken: false
+    };
+
+    // Position based on type
+    if (template.type === 'low_spike') {
+        obs.y = GROUND_Y - template.h;
+    } else if (template.type === 'beam') {
+        obs.y = GROUND_Y - 60; // overhead
+    } else if (template.type === 'narrow') {
+        obs.y = GROUND_Y - template.h;
+        obs.gapY = GROUND_Y - 50; // gap position
+        obs.gapH = 22; // gap size
+    } else if (template.type === 'breakable') {
+        obs.y = GROUND_Y - template.h;
+    }
+
+    obstacles.push(obs);
+
+    // Show warning
+    warnings.push({
+        text: template.hint,
+        color: FORMS[template.solution].color,
+        life: 80,
+        x: canvas.width - 100
+    });
+
+    scheduleObstacle();
+}
+
+function gameLoop() {
+    if (!running) return;
+    frameCount++;
+
+    // Get current form from input
+    targetForm = getForm();
+    currentForm = targetForm;
+
+    // Morph player dimensions
+    const form = FORMS[currentForm];
+    player.targetW = form.w;
+    player.targetH = form.h;
+    player.w += (player.targetW - player.w) * 0.3;
+    player.h += (player.targetH - player.h) * 0.3;
+    player.y = GROUND_Y - player.h;
+
+    // Speed increases
+    speed = baseSpeed + distance * 0.002;
+    distance += speed * 0.1;
+
+    // Spawn obstacles
+    nextObstacleIn -= 1;
+    if (nextObstacleIn <= 0) spawnObstacle();
+
+    // Update obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        let obs = obstacles[i];
+        obs.x -= speed;
+
+        if (obs.broken) {
+            obs.breakTimer = (obs.breakTimer || 0) + 1;
+            if (obs.breakTimer > 30) { obstacles.splice(i, 1); continue; }
+            continue;
+        }
+
+        // Check collision
+        if (obs.x < player.x + player.w - 5 && obs.x + obs.w > player.x + 5) {
+            let collides = false;
+
+            if (obs.type === 'low_spike') {
+                // Tall form jumps over (player bottom above spike)
+                if (currentForm !== 'tall') {
+                    if (player.y + player.h > obs.y + 5) collides = true;
+                }
+            } else if (obs.type === 'beam') {
+                // Flat form slides under
+                if (currentForm !== 'flat') {
+                    if (player.y < obs.y + obs.h) collides = true;
+                }
+            } else if (obs.type === 'narrow') {
+                // Small form fits through gap
+                if (currentForm !== 'small') {
+                    collides = true;
+                }
+            } else if (obs.type === 'breakable') {
+                // Big form breaks it
+                if (currentForm === 'big') {
+                    obs.broken = true;
+                    obs.breakTimer = 0;
+                    score += 50;
+                    spawnBreakParticles(obs.x, obs.y, obs.w, obs.h);
+                } else {
+                    if (player.y + player.h > obs.y + 5) collides = true;
+                }
+            }
+
+            if (collides) { die(obs); return; }
+
+            // Score for passing
+            if (!obs.passed && obs.x + obs.w < player.x) {
+                obs.passed = true;
+                score += 10;
+            }
+        }
+
+        // Remove off-screen
+        if (obs.x + obs.w < -50) obstacles.splice(i, 1);
+    }
+
+    // Update warnings
+    for (let i = warnings.length-1; i >= 0; i--) {
+        warnings[i].life--;
+        warnings[i].x -= speed;
+        if (warnings[i].life <= 0) warnings.splice(i, 1);
+    }
+
+    // Update particles
+    for (let i = particles.length-1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.3;
+        p.life--; p.size *= 0.95;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function die(obs) {
+    running = false;
+    spawnParticles(player.x + player.w/2, player.y + player.h/2, '#ff0080', 20);
+
+    const dist = Math.floor(distance);
+    if (dist > highScore) {
+        highScore = dist;
+        localStorage.setItem('morph_high', highScore);
+    }
+
+    const tips = [
+        '提示：看到地面尖刺按 ↑ 变高跳过',
+        '提示：看到头顶横梁按 ↓ 变扁滑过',
+        '提示：看到窄缝按 ← 变小穿过',
+        '提示：看到木墙按 → 变大撞碎',
+    ];
+
+    setTimeout(() => {
+        document.getElementById('final-dist').textContent = `${dist}m`;
+        document.getElementById('best-text').textContent = `最远: ${highScore}m | 得分: ${score}`;
+        document.getElementById('tip-text').textContent = obs ? tips[OBSTACLE_TYPES.findIndex(t => t.type === obs.type)] : '';
+        document.getElementById('dead-overlay').classList.remove('hidden');
+    }, 500);
+}
+
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-1)*8,
+            life: 30+Math.random()*20, color, size: 4+Math.random()*5
+        });
+    }
+}
+
+function spawnBreakParticles(ox, oy, ow, oh) {
+    for (let i = 0; i < 15; i++) {
+        particles.push({
+            x: ox + Math.random()*ow, y: oy + Math.random()*oh,
+            vx: 3 + Math.random()*5, vy: (Math.random()-0.5)*8,
+            life: 25+Math.random()*15, color: '#8B4513', size: 5+Math.random()*6
+        });
+    }
+}
+
+// Drawing
+function draw() {
+    // Background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGrad.addColorStop(0, '#0d1117');
+    bgGrad.addColorStop(1, '#161b22');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Moving background stars
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    for (let i = 0; i < 30; i++) {
+        const sx = (i * 137 + frameCount * (0.3 + i * 0.02)) % (canvas.width + 20) - 10;
+        const sy = (i * 97) % (GROUND_Y - 50) + 20;
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+
+    // Ground
+    ctx.fillStyle = '#21262d';
+    ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+
+    // Ground line with pulse
+    const pulse = Math.sin(frameCount * 0.05) * 0.3 + 0.7;
+    ctx.strokeStyle = `rgba(0, 212, 255, ${pulse * 0.6})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(canvas.width, GROUND_Y); ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // Moving ground marks
+    ctx.fillStyle = 'rgba(0, 212, 255, 0.1)';
+    const markOffset = (frameCount * speed) % 40;
+    for (let x = -markOffset; x < canvas.width; x += 40) {
+        ctx.fillRect(x, GROUND_Y + 5, 20, 2);
+    }
+
+    // Warnings
+    for (let w of warnings) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(w.life / 30, 1) * 0.8;
+        ctx.fillStyle = w.color;
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(w.text, w.x, GROUND_Y - 120);
+        // Arrow down
+        ctx.beginPath();
+        ctx.moveTo(w.x, GROUND_Y - 105);
+        ctx.lineTo(w.x - 5, GROUND_Y - 110);
+        ctx.lineTo(w.x + 5, GROUND_Y - 110);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Obstacles
+    for (let obs of obstacles) {
+        if (obs.x > canvas.width + 50) continue;
+        ctx.save();
+
+        if (obs.broken) {
+            ctx.globalAlpha = 1 - obs.breakTimer / 30;
+        }
+
+        if (obs.type === 'low_spike') {
+            // Spikes on ground
+            ctx.fillStyle = '#ff4444';
+            const spikes = Math.floor(obs.w / 12);
+            for (let i = 0; i < spikes; i++) {
+                ctx.beginPath();
+                ctx.moveTo(obs.x + i * 12, GROUND_Y);
+                ctx.lineTo(obs.x + i * 12 + 6, GROUND_Y - obs.h);
+                ctx.lineTo(obs.x + i * 12 + 12, GROUND_Y);
+                ctx.fill();
+            }
+            // Glow
+            ctx.shadowColor = '#ff4444';
+            ctx.shadowBlur = 5;
+            ctx.fill();
+        } else if (obs.type === 'beam') {
+            // Overhead beam
+            ctx.fillStyle = '#666';
+            ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            ctx.fillStyle = '#888';
+            ctx.fillRect(obs.x, obs.y, obs.w, 4);
+            // Warning stripes
+            ctx.strokeStyle = '#ffbe0b';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < obs.w; i += 15) {
+                ctx.beginPath();
+                ctx.moveTo(obs.x + i, obs.y + obs.h);
+                ctx.lineTo(obs.x + i + 8, obs.y);
+                ctx.stroke();
+            }
+        } else if (obs.type === 'narrow') {
+            // Wall with small gap
+            ctx.fillStyle = '#4a5568';
+            // Top part
+            ctx.fillRect(obs.x, 0, obs.w, obs.gapY);
+            // Bottom part
+            ctx.fillRect(obs.x, obs.gapY + obs.gapH, obs.w, GROUND_Y - obs.gapY - obs.gapH);
+            // Gap highlight
+            ctx.strokeStyle = '#ff006e';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(obs.x, obs.gapY, obs.w, obs.gapH);
+            // Glow around gap
+            ctx.shadowColor = '#ff006e';
+            ctx.shadowBlur = 8;
+            ctx.strokeRect(obs.x, obs.gapY, obs.w, obs.gapH);
+        } else if (obs.type === 'breakable') {
+            // Wooden wall
+            ctx.fillStyle = obs.broken ? 'rgba(139,69,19,0.3)' : '#8B4513';
+            ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            // Wood grain
+            ctx.strokeStyle = '#A0522D';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < obs.h; i += 10) {
+                ctx.beginPath();
+                ctx.moveTo(obs.x, obs.y + i);
+                ctx.lineTo(obs.x + obs.w, obs.y + i);
+                ctx.stroke();
+            }
+            // Crack marks
+            if (!obs.broken) {
+                ctx.strokeStyle = '#654321';
+                ctx.beginPath();
+                ctx.moveTo(obs.x + obs.w/2, obs.y);
+                ctx.lineTo(obs.x + obs.w/3, obs.y + obs.h/2);
+                ctx.lineTo(obs.x + obs.w/2, obs.y + obs.h);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    // Player
+    ctx.save();
+    const form = FORMS[currentForm];
+    const px = player.x;
+    const py = player.y;
+    const pw = player.w;
+    const ph = player.h;
+
+    // Glow
+    ctx.shadowColor = form.color;
+    ctx.shadowBlur = 15;
+
+    // Body
+    ctx.fillStyle = form.color;
+    const radius = Math.min(pw, ph) * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(px + radius, py);
+    ctx.lineTo(px + pw - radius, py);
+    ctx.quadraticCurveTo(px + pw, py, px + pw, py + radius);
+    ctx.lineTo(px + pw, py + ph - radius);
+    ctx.quadraticCurveTo(px + pw, py + ph, px + pw - radius, py + ph);
+    ctx.lineTo(px + radius, py + ph);
+    ctx.quadraticCurveTo(px, py + ph, px, py + ph - radius);
+    ctx.lineTo(px, py + radius);
+    ctx.quadraticCurveTo(px, py, px + radius, py);
+    ctx.fill();
+
+    // Eyes
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    const eyeSize = Math.min(pw, ph) * 0.15;
+    const eyeX = px + pw * 0.65;
+    const eyeY = py + ph * 0.35;
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(eyeX - pw * 0.2, eyeY, eyeSize * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(eyeX + 1, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
+    ctx.arc(eyeX - pw * 0.2 + 1, eyeY, eyeSize * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Motion trail
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = form.color;
+    for (let i = 1; i <= 3; i++) {
+        ctx.globalAlpha = 0.1 / i;
+        ctx.fillRect(px - i * 12, py + 2, pw - 4, ph - 4);
+    }
+    ctx.restore();
+
+    // Particles
+    for (let p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.life / 50;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        ctx.restore();
+    }
+
+    // HUD
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText(`距离: ${Math.floor(distance)}m`, 15, 35);
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = '14px Arial';
+    ctx.fillText(`得分: ${score}`, 15, 55);
+
+    // Current form indicator
+    ctx.fillStyle = form.color;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(`当前: ${form.name}`, canvas.width - 15, 35);
+    ctx.textAlign = 'left';
+
+    // Form indicator icons at bottom
+    const forms = ['tall', 'flat', 'small', 'big'];
+    const formKeys = ['↑', '↓', '←', '→'];
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < 4; i++) {
+        const fx = canvas.width/2 - 90 + i * 60;
+        const fy = canvas.height - 25;
+        const f = FORMS[forms[i]];
+        ctx.globalAlpha = currentForm === forms[i] ? 1 : 0.4;
+        ctx.fillStyle = f.color;
+        ctx.fillRect(fx - 10, fy - 8, 20, 12);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(formKeys[i], fx, fy + 18);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+
+    // Speed indicator
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(canvas.width - 120, 50, 100, 6);
+    const speedFill = Math.min((speed - baseSpeed) / 5, 1);
+    ctx.fillStyle = '#00d4ff';
+    ctx.fillRect(canvas.width - 120, 50, 100 * speedFill, 6);
+}
+
+// Init
+ctx.fillStyle = '#0d1117';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+    </script>
+</body>
+</html>
