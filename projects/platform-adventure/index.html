@@ -1,1081 +1,966 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冒险跳跳 - 平台跳跃冒险</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #1a1a2e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-        }
-        canvas {
-            border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0, 200, 255, 0.3);
-        }
-        #ui-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        #ui-overlay.active { pointer-events: all; }
-        .menu-screen {
-            text-align: center;
-            color: white;
-            display: none;
-        }
-        .menu-screen.visible { display: block; }
-        .menu-screen h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(255, 200, 0, 0.8);
-        }
-        .menu-screen h2 {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-        .menu-screen p {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: #ccc;
-        }
-        .btn {
-            display: inline-block;
-            padding: 15px 40px;
-            margin: 10px;
-            font-size: 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            font-weight: bold;
-        }
-        .btn:hover { transform: scale(1.1); }
-        .btn-start {
-            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-            color: white;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-        }
-        .btn-level {
-            background: linear-gradient(135deg, #4ecdc4, #44bd9e);
-            color: white;
-            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
-            padding: 12px 30px;
-            font-size: 16px;
-        }
-        .btn-level.locked {
-            background: #555;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-        .controls-info {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #888;
-            line-height: 1.8;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101f28">
+<meta name="description" content="六个绘本世界，一段关于勇气与好奇心的冒险。探索、跳跃、收集，与星光伙伴一起修复天空花园。">
+<title>星光漫游 · 失落的天空花园</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>if (window.tailwind) { tailwind.config = { theme: { extend: { fontFamily: { serif: ['Noto Serif SC', 'Georgia', 'serif'] } } } }; }</script>
 </head>
-<body>
-    <canvas id="game"></canvas>
-    <div id="ui-overlay" class="active">
-        <div id="start-screen" class="menu-screen visible">
-            <h1>冒险跳跳</h1>
-            <p>一个充满挑战的平台跳跃冒险</p>
-            <br>
-            <button class="btn btn-start" onclick="startGame()">开始冒险</button>
-            <div class="controls-info">
-                <p>← → 移动 | 空格/↑ 跳跃 | 空中可双段跳</p>
-                <p>贴墙时按跳跃可墙跳 | 收集所有星星到达终点</p>
-            </div>
-        </div>
-        <div id="level-screen" class="menu-screen">
-            <h2>选择关卡</h2>
-            <div id="level-buttons"></div>
-            <br>
-            <button class="btn btn-start" onclick="showStart()" style="font-size:16px;padding:10px 25px;">返回</button>
-        </div>
-        <div id="win-screen" class="menu-screen">
-            <h2 id="win-title">关卡通过！</h2>
-            <p id="win-info"></p>
-            <button class="btn btn-start" onclick="nextLevel()">下一关</button>
-            <button class="btn btn-level" onclick="showLevels()">关卡选择</button>
-        </div>
-        <div id="death-screen" class="menu-screen">
-            <h2 style="color:#ff6b6b;">失败了！</h2>
-            <p style="color:#ccc;">再试一次吧，你可以的！</p>
-            <button class="btn btn-start" onclick="retryLevel()">重试</button>
-        </div>
-    </div>
+<body class="m-0 bg-[#101f28]">
+<div id="app"><p class="p-10 text-center text-stone-200">正在打开星光地图…</p></div>
+<noscript>这个游戏需要启用 JavaScript 才能运行。</noscript>
+<script type="module">
 
-    <script>
-// ============ GAME ENGINE ============
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-
-canvas.width = 960;
-canvas.height = 640;
-
-// Game state
-let gameState = 'menu'; // menu, playing, win, dead
-let currentLevel = 0;
-let unlockedLevels = 1;
-let stars = 0;
-let totalStars = 0;
-let deathCount = 0;
-let frameCount = 0;
-
-// Keys
-const keys = {};
-window.addEventListener('keydown', e => { keys[e.code] = true; if(['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault(); });
-window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-// ============ PLAYER ============
-const player = {
-    x: 50, y: 400, w: 28, h: 36,
-    vx: 0, vy: 0,
-    speed: 5.5, jumpForce: -15, gravity: 0.55,
-    grounded: false, wallSliding: false, wallDir: 0,
-    jumpsLeft: 2, maxJumps: 2,
-    jumpPressed: false,
-    facing: 1,
-    dead: false,
-    trail: [],
-    animFrame: 0, animTimer: 0
-};
-
-function resetPlayer(x, y) {
-    player.x = x || 50;
-    player.y = y || 400;
-    player.vx = 0;
-    player.vy = 0;
-    player.grounded = false;
-    player.wallSliding = false;
-    player.jumpsLeft = 2;
-    player.dead = false;
-    player.trail = [];
-}
-
-// ============ LEVEL DATA ============
-const levels = [
-    // Level 1: 森林 - 教学+中等难度
-    {
-        name: "幽暗森林",
-        bg: { top: '#1a472a', bottom: '#0d2818' },
-        spawn: [50, 500],
-        goal: [900, 80],
-        platforms: [
-            // 地面
-            {x:0, y:590, w:250, h:50, type:'solid'},
-            {x:250, y:560, w:100, h:30, type:'solid'},
-            {x:380, y:520, w:120, h:30, type:'solid'},
-            // 移动平台区域
-            {x:520, y:480, w:100, h:20, type:'moving', moveX:70, speed:1.5},
-            {x:650, y:420, w:90, h:20, type:'solid'},
-            {x:750, y:360, w:100, h:20, type:'moving', moveY:70, speed:1.2},
-            // 上层
-            {x:620, y:300, w:80, h:20, type:'solid'},
-            {x:500, y:250, w:90, h:20, type:'solid'},
-            {x:370, y:280, w:80, h:20, type:'moving', moveX:50, speed:1.8},
-            {x:250, y:220, w:100, h:20, type:'solid'},
-            // 弹簧区
-            {x:130, y:300, w:80, h:20, type:'solid'},
-            {x:140, y:310, w:30, h:10, type:'spring'},
-            // 高层
-            {x:50, y:180, w:120, h:20, type:'solid'},
-            {x:200, y:140, w:90, h:20, type:'moving', moveX:80, speed:2},
-            {x:380, y:130, w:100, h:20, type:'solid'},
-            {x:500, y:100, w:80, h:20, type:'solid'},
-            {x:630, y:80, w:80, h:20, type:'solid'},
-            {x:730, y:60, w:80, h:20, type:'solid'},
-            {x:850, y:80, w:110, h:20, type:'solid'},
-            // 墙壁 (用于墙跳)
-            {x:480, y:350, w:20, h:140, type:'solid'},
-            {x:160, y:400, w:20, h:120, type:'solid'},
-        ],
-        hazards: [
-            {x:300, y:570, w:35, h:20, type:'spike'},
-            {x:450, y:500, w:25, h:20, type:'spike'},
-            {x:320, y:260, w:25, h:20, type:'spike'},
-        ],
-        stars: [
-            {x:540, y:450, collected:false},
-            {x:650, y:380, collected:false},
-            {x:400, y:250, collected:false},
-            {x:130, y:260, collected:false},
-            {x:270, y:110, collected:false},
-        ],
-        decorations: [
-            {x:30, y:550, type:'tree'},
-            {x:150, y:540, type:'bush'},
-            {x:400, y:480, type:'tree'},
-            {x:700, y:320, type:'bush'},
-        ]
-    },
-    // Level 2: 云端 - 较难
-    {
-        name: "云端天际",
-        bg: { top: '#87CEEB', bottom: '#E0F7FA' },
-        spawn: [50, 550],
-        goal: [880, 60],
-        platforms: [
-            // 起点
-            {x:0, y:590, w:180, h:50, type:'solid'},
-            // 消失平台序列
-            {x:180, y:540, w:80, h:15, type:'disappear', timer:60},
-            {x:280, y:490, w:80, h:15, type:'disappear', timer:55},
-            {x:380, y:440, w:80, h:15, type:'disappear', timer:50},
-            // 风力区域的平台
-            {x:480, y:400, w:100, h:20, type:'solid'},
-            {x:580, y:440, w:80, h:15, type:'moving', moveX:80, speed:2},
-            {x:720, y:380, w:90, h:20, type:'solid'},
-            // 中层 - 需要精准跳跃
-            {x:820, y:340, w:70, h:15, type:'disappear', timer:50},
-            {x:720, y:280, w:70, h:15, type:'disappear', timer:50},
-            {x:600, y:240, w:80, h:20, type:'solid'},
-            {x:480, y:200, w:70, h:15, type:'moving', moveY:50, speed:1.5},
-            // 上层
-            {x:350, y:180, w:90, h:20, type:'solid'},
-            {x:220, y:150, w:80, h:15, type:'disappear', timer:50},
-            {x:100, y:120, w:100, h:20, type:'solid'},
-            {x:200, y:80, w:80, h:15, type:'moving', moveX:70, speed:2.5},
-            {x:350, y:60, w:80, h:20, type:'solid'},
-            {x:480, y:50, w:70, h:15, type:'disappear', timer:45},
-            {x:600, y:70, w:80, h:20, type:'solid'},
-            {x:720, y:50, w:90, h:20, type:'solid'},
-            {x:840, y:60, w:120, h:20, type:'solid'},
-            // 墙壁
-            {x:460, y:300, w:20, h:120, type:'solid'},
-            {x:830, y:150, w:20, h:140, type:'solid'},
-        ],
-        hazards: [
-            {x:500, y:380, w:60, h:150, type:'wind', force:-2.5},
-            {x:200, y:520, w:35, h:20, type:'spike'},
-            {x:650, y:360, w:25, h:20, type:'spike'},
-            {x:550, y:55, w:25, h:25, type:'saw'},
-        ],
-        stars: [
-            {x:300, y:460, collected:false},
-            {x:630, y:410, collected:false},
-            {x:760, y:250, collected:false},
-            {x:130, y:85, collected:false},
-            {x:500, y:20, collected:false},
-            {x:760, y:20, collected:false},
-        ],
-        decorations: [
-            {x:50, y:560, type:'cloud'},
-            {x:300, y:350, type:'cloud'},
-            {x:650, y:200, type:'cloud'},
-            {x:100, y:50, type:'cloud'},
-        ]
-    },
-    // Level 3: 火山城堡 - 很难
-    {
-        name: "烈焰城堡",
-        bg: { top: '#2d1b00', bottom: '#1a0a00' },
-        spawn: [50, 530],
-        goal: [880, 50],
-        platforms: [
-            // 起点区域
-            {x:0, y:570, w:150, h:70, type:'solid'},
-            {x:150, y:540, w:70, h:15, type:'moving', moveY:35, speed:1.5},
-            {x:240, y:500, w:80, h:20, type:'solid'},
-            // 岩浆上方
-            {x:340, y:520, w:70, h:15, type:'disappear', timer:40},
-            {x:430, y:480, w:70, h:15, type:'disappear', timer:40},
-            {x:520, y:440, w:80, h:20, type:'solid'},
-            // 旋转机关区
-            {x:620, y:460, w:70, h:15, type:'moving', moveX:50, speed:2.5},
-            {x:740, y:420, w:90, h:20, type:'solid'},
-            {x:850, y:380, w:80, h:20, type:'solid'},
-            // 墙跳走廊
-            {x:880, y:200, w:20, h:180, type:'solid'},
-            {x:820, y:250, w:20, h:150, type:'solid'},
-            // 中层
-            {x:700, y:280, w:80, h:20, type:'solid'},
-            {x:580, y:310, w:70, h:15, type:'moving', moveX:40, speed:2.5},
-            {x:460, y:280, w:70, h:15, type:'disappear', timer:35},
-            {x:350, y:250, w:80, h:20, type:'solid'},
-            {x:230, y:280, w:70, h:15, type:'moving', moveY:40, speed:2},
-            {x:120, y:240, w:80, h:20, type:'solid'},
-            // 最上层
-            {x:50, y:180, w:70, h:15, type:'disappear', timer:35},
-            {x:150, y:140, w:70, h:15, type:'disappear', timer:35},
-            {x:270, y:120, w:80, h:20, type:'solid'},
-            {x:380, y:100, w:70, h:15, type:'moving', moveX:60, speed:2.5},
-            {x:500, y:80, w:70, h:15, type:'disappear', timer:30},
-            {x:620, y:60, w:80, h:20, type:'solid'},
-            {x:740, y:50, w:80, h:20, type:'solid'},
-            {x:840, y:50, w:120, h:20, type:'solid'},
-            // 额外墙壁
-            {x:300, y:350, w:20, h:120, type:'solid'},
-            {x:100, y:320, w:20, h:100, type:'solid'},
-        ],
-        hazards: [
-            // 岩浆底部
-            {x:0, y:620, w:960, h:30, type:'lava'},
-            // 尖刺
-            {x:270, y:480, w:35, h:20, type:'spike'},
-            {x:560, y:420, w:25, h:20, type:'spike'},
-            {x:400, y:230, w:25, h:20, type:'spike'},
-            // 锯片 - 减少
-            {x:650, y:350, w:28, h:28, type:'saw'},
-            {x:480, y:180, w:28, h:28, type:'saw'},
-            // 火球发射器 - 间隔延长
-            {x:400, y:450, w:20, h:20, type:'fireball_spawner', interval:120, dir:'up'},
-            {x:600, y:150, w:20, h:20, type:'fireball_spawner', interval:110, dir:'left'},
-        ],
-        stars: [
-            {x:370, y:490, collected:false},
-            {x:680, y:430, collected:false},
-            {x:860, y:280, collected:false},
-            {x:460, y:250, collected:false},
-            {x:150, y:200, collected:false},
-            {x:400, y:70, collected:false},
-            {x:880, y:20, collected:false},
-        ],
-        decorations: [
-            {x:50, y:530, type:'torch'},
-            {x:500, y:400, type:'torch'},
-            {x:800, y:350, type:'torch'},
-            {x:300, y:210, type:'torch'},
-        ]
-    }
+// Source module: adventure-data.js
+const VERSION = 2;
+const SAVE_KEY = 'starlight-garden-v2';
+const WORLDS = [
+  { id: 0, name: '晨光森林', subtitle: '每段旅程，都从一小步开始', tag: '二段跳 · 初遇伙伴', color: '#9bd8ad', sky: ['#163e48', '#8db8a5'], land: '#3e7464', light: '#f9e5a2', story: '天空花园的星光散落了。小狐狸米露带来一封信：沿着星星走，我们一起把它们找回来。', tip: '空中再按一次跳跃，就能跳得更远。星星是路标，不必全部收集也能过关。', friend: '米露', species: '狐', note: '勇敢不等于从不害怕，而是愿意再向前一步。', mechanic: 'spring' },
+  { id: 1, name: '蘑菇溪谷', subtitle: '听，森林正在轻轻呼吸', tag: '弹跳蘑菇 · 隐藏小路', color: '#ebbaab', sky: ['#433650', '#ba8f91'], land: '#816c72', light: '#ffdfa9', story: '溪谷里住着喜欢收集露珠的兔子。踩上发光蘑菇，让它把你送到平时到不了的地方。', tip: '发光蘑菇会自动把你弹起。高处藏着旅行徽章，也藏着一位新朋友。', friend: '露露', species: '兔', note: '偶尔绕一点路，会遇见计划之外的美好。', mechanic: 'spring' },
+  { id: 2, name: '云上邮局', subtitle: '把勇气寄给远方的自己', tag: '移动云台 · 空中冲刺', color: '#afd9ed', sky: ['#355a80', '#b8d7e5'], land: '#738fa3', light: '#fff0be', story: '一封信被风吹到了云端。猫头鹰邮差正等你帮忙。新的星光能力已经苏醒：试试空中冲刺！', tip: '按 X 或 Shift 冲刺，长按跳跃可以滑翔。浅蓝色风场会托住你。', friend: '咕咕', species: '鸮', note: '风向未必由你决定，但你可以展开自己的翅膀。', mechanic: 'moving' },
+  { id: 3, name: '月光图书馆', subtitle: '答案，藏在你认真观察的地方', tag: '符文解谜 · 星光桥', color: '#c6b9e9', sky: ['#252748', '#696386'], land: '#646181', light: '#e8dcb0', story: '古老的书页上写着：月亮先醒来，星星随后，太阳最后。找到三枚符文，唤醒通往花园的桥。', tip: '靠近符文按 E。点亮顺序：月亮 → 星星 → 太阳。顺序错了也没关系，可以重新试。', friend: '墨墨', species: '猫', note: '不急着得到答案，也是探索的一部分。', mechanic: 'puzzle' },
+  { id: 4, name: '水晶洞穴', subtitle: '微小的光，也能照亮前路', tag: '短暂晶台 · 滑翔穿行', color: '#9adbd9', sky: ['#112d45', '#38536c'], land: '#3f737b', light: '#adf0df', story: '洞穴里的小龙并不凶，它只是怕黑。用你找回的星光，为它点亮一条回家的路。', tip: '有裂纹的水晶台踩上后会暂时消失。保持移动，或从下面较稳妥的路线通过。', friend: '小岚', species: '龙', note: '你的温柔，也可以成为一种力量。', mechanic: 'crumble' },
+  { id: 5, name: '星空花园', subtitle: '原来，你一直都在闪闪发光', tag: '种子寻回 · 花园盛放', color: '#e2c68c', sky: ['#222c4c', '#746a85'], land: '#697760', light: '#ffe4a1', story: '最后三颗星光种子就在花园里。带它们回到星门，让我们的旅行，开出属于自己的花。', tip: '沿途找到 3 颗金色种子，再抵达星门。没有计时压力，慢慢走也一样精彩。', friend: '星芽', species: '灵', note: '你走过的每一步，都让世界多了一点光。', mechanic: 'seeds' }
 ];
-
-// ============ GAME OBJECTS ============
-let platforms = [];
-let hazards = [];
-let levelStars = [];
-let decorations = [];
-let particles = [];
-let fireballs = [];
-let camera = { x: 0, y: 0 };
-
-function loadLevel(idx) {
-    const level = levels[idx];
-    platforms = level.platforms.map(p => ({
-        ...p,
-        origX: p.x, origY: p.y,
-        phase: Math.random() * Math.PI * 2,
-        disappeared: false, disappearTimer: 0, respawnTimer: 0,
-        touched: false
-    }));
-    hazards = level.hazards.map(h => ({...h, phase: Math.random() * Math.PI * 2}));
-    levelStars = level.stars.map(s => ({...s, collected: false, bobPhase: Math.random() * Math.PI * 2}));
-    decorations = level.decorations || [];
-    fireballs = [];
-    particles = [];
-    stars = 0;
-    totalStars = level.stars.length;
-    resetPlayer(level.spawn[0], level.spawn[1]);
+const OUTFITS = [
+  { name: '薄荷旅人', coat: '#8ed1bb', scarf: '#f4cb76', need: 0 },
+  { name: '落日来信', coat: '#e4a092', scarf: '#fae4a2', need: 1 },
+  { name: '晴空漫步', coat: '#88bde2', scarf: '#f4d38a', need: 2 },
+  { name: '月光书签', coat: '#b9a6dc', scarf: '#aee0d0', need: 3 },
+  { name: '极光之约', coat: '#81cdc8', scarf: '#e5c0df', need: 4 },
+  { name: '星花信使', coat: '#ebd294', scarf: '#db9aaa', need: 5 }
+];
+const MODES = {
+  explore: { name: '轻松探索', jumps: 3, speed: 255, crumble: 2.4, hazardSpeed: 0.65 },
+  adventure: { name: '标准冒险', jumps: 2, speed: 290, crumble: 1.3, hazardSpeed: 1 }
+};
+function makeLevel(index) {
+  const theme = WORLDS[index];
+  if (!theme) throw new Error('未知关卡');
+  const platforms = [];
+  const stars = [];
+  const hazards = [];
+  const checkpoints = [];
+  const seedItems = [];
+  const heights = [495, 480, 465, 500, 470, 485, 460, 485, 470, 495, 470, 490];
+  for (let i = 0; i < 12; i++) {
+    const x = i * 330;
+    const y = heights[(i + (index > 0 ? index : 0)) % heights.length];
+    platforms.push({ id: `ground-${i}`, x, y, w: 248, h: 180, type: 'ground' });
+    for (let j = 0; j < 3; j++) stars.push({ id: `s-${i}-${j}`, x: x + 70 + j * 56, y: y - 46 });
+    if (i === 3 || i === 7 || i === 10) checkpoints.push({ x: x + 35, y, id: i });
+    if (i > 0 && i < 11) {
+      const type = index === 2 ? 'moving' : index === 4 ? 'crumble' : 'leaf';
+      platforms.push({ id: `high-${i}`, x: x + 105, y: y - 125, w: 125, h: 19, type, axis: i % 2 ? 'x' : 'y', range: 34, phase: i * 1.7 });
+      stars.push({ id: `high-star-${i}`, x: x + 160, y: y - 158 });
+    }
+    if ([1, 4, 8].includes(i) && (index === 0 || index === 1 || index === 5)) {
+      platforms.push({ id: `spring-${i}`, x: x + 190, y: y - 16, w: 45, h: 16, type: 'spring' });
+    }
+    if (index > 0 && [2, 5, 8].includes(i)) hazards.push({ x: x + 148, y: y - 14, w: 36, h: 14, type: 'thorn' });
+    if (index > 1 && [4, 9].includes(i)) hazards.push({ x: x + 295, y: y - 92, w: 26, h: 26, type: 'wisp', phase: i });
+    if (index === 5 && [2, 6, 9].includes(i)) seedItems.push({ id: i, x: x + 78, y: y - 35 });
+  }
+  const switches = index === 3 ? [
+    { id: 0, x: 1690, y: heights[8] - 18, name: '月亮' },
+    { id: 1, x: 2020, y: heights[9] - 18, name: '星星' },
+    { id: 2, x: 2350, y: heights[10] - 18, name: '太阳' }
+  ] : [];
+  if (index === 3) {
+    platforms.push({ id: 'gate', x: 2580, y: 0, w: 24, h: 610, type: 'gate' });
+    platforms.push({ id: 'starlight-bridge', x: 2540, y: 470, w: 130, h: 16, type: 'bridge' });
+  }
+  const friendPlatform = platforms.find(p => p.id === 'high-6');
+  const badgePlatform = platforms.find(p => p.id === 'high-9');
+  const endGround = platforms.find(p => p.id === 'ground-11');
+  const winds = index === 2 ? [{ x: 850, y: 230, w: 120, h: 350 }, { x: 2810, y: 180, w: 120, h: 390 }] : [];
+  return {
+    ...theme, width: 3940, platforms, stars, hazards, checkpoints, switches, winds, seedItems,
+    spawn: { x: 70, y: platforms[0].y - 42 },
+    friend: { x: friendPlatform.x + 60, y: friendPlatform.y - 24, name: theme.friend, species: theme.species },
+    badge: { x: badgePlatform.x + 58, y: badgePlatform.y - 35 },
+    goal: { x: 3790, y: endGround.y - 72 }
+  };
+}
+function blankSave() {
+  return { version: VERSION, unlocked: 1, selected: 0, mode: 'explore', outfit: 0, companion: 0, sound: true, reduced: false, records: {}, active: null };
+}
+function readSave(storage) {
+  const clean = blankSave();
+  try {
+    const value = JSON.parse(storage.getItem(SAVE_KEY));
+    if (!value || value.version !== VERSION) return { save: clean, available: true };
+    for (const key of ['sound', 'reduced']) if (typeof value[key] === 'boolean') clean[key] = value[key];
+    if (Object.hasOwn(MODES, value.mode)) clean.mode = value.mode;
+    clean.unlocked = Math.min(6, Math.max(1, Number.isInteger(value.unlocked) ? value.unlocked : 1));
+    clean.selected = Math.min(clean.unlocked - 1, Math.max(0, Number.isInteger(value.selected) ? value.selected : 0));
+    clean.outfit = Math.min(clean.unlocked - 1, Math.max(0, Number.isInteger(value.outfit) ? value.outfit : 0));
+    clean.companion = Math.min(5, Math.max(0, Number.isInteger(value.companion) ? value.companion : 0));
+    if (value.records && typeof value.records === 'object' && !Array.isArray(value.records)) {
+      for (let i = 0; i < 6; i++) {
+        const r = value.records[i];
+        if (r && typeof r === 'object') clean.records[i] = {
+          stars: Math.max(0, Math.min(46, Number.isFinite(r.stars) ? r.stars : 0)),
+          friend: r.friend === true, badge: r.badge === true, complete: r.complete === true,
+          time: Number.isFinite(r.time) && r.time > 0 ? r.time : 0
+        };
+      }
+    }
+    if (value.active && Number.isInteger(value.active.level) && value.active.level >= 0 && value.active.level < clean.unlocked) {
+      const a = value.active;
+      const ids = v => Array.isArray(v) ? v.filter(x => typeof x === 'string' || Number.isInteger(x)).slice(0, 60) : [];
+      clean.active = { level: a.level, checkpoint: [3, 7, 10].includes(a.checkpoint) ? a.checkpoint : null, stars: ids(a.stars), seeds: ids(a.seeds), friend: a.friend === true, badge: a.badge === true, puzzle: Math.min(3, Math.max(0, Number.isInteger(a.puzzle) ? a.puzzle : 0)), time: Math.max(0, Number.isFinite(a.time) ? a.time : 0) };
+    }
+    return { save: clean, available: true };
+  } catch { return { save: clean, available: false }; }
 }
 
-// ============ PHYSICS & COLLISION ============
-function rectCollide(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
 
-function updatePlayer() {
-    if (player.dead) return;
-
-    // Horizontal movement
-    let moveX = 0;
-    if (keys['ArrowLeft'] || keys['KeyA']) { moveX = -1; player.facing = -1; }
-    if (keys['ArrowRight'] || keys['KeyD']) { moveX = 1; player.facing = 1; }
-
-    player.vx = moveX * player.speed;
-
-    // Wall sliding detection
-    player.wallSliding = false;
-    player.wallDir = 0;
-    if (!player.grounded) {
-        for (let p of platforms) {
-            if (p.disappeared) continue;
-            // Check wall on left
-            if (moveX < 0 && player.x <= p.x + p.w + 2 && player.x >= p.x + p.w - 4 &&
-                player.y + player.h > p.y && player.y < p.y + p.h) {
-                player.wallSliding = true;
-                player.wallDir = -1;
-            }
-            // Check wall on right
-            if (moveX > 0 && player.x + player.w >= p.x - 2 && player.x + player.w <= p.x + 4 &&
-                player.y + player.h > p.y && player.y < p.y + p.h) {
-                player.wallSliding = true;
-                player.wallDir = 1;
-            }
-        }
-    }
-
-    // Wall slide slows fall
-    if (player.wallSliding && player.vy > 0) {
-        player.vy = Math.min(player.vy, 3);
-    }
-
-    // Jump
-    const jumpKey = keys['Space'] || keys['ArrowUp'] || keys['KeyW'];
-    if (jumpKey && !player.jumpPressed) {
-        player.jumpPressed = true;
-        if (player.wallSliding) {
-            // Wall jump
-            player.vx = -player.wallDir * 8;
-            player.vy = player.jumpForce * 0.85;
-            player.jumpsLeft = 1;
-            spawnParticles(player.x + player.w/2, player.y + player.h/2, 5, '#fff');
-        } else if (player.jumpsLeft > 0) {
-            player.vy = player.jumpForce * (player.jumpsLeft === player.maxJumps ? 1 : 0.85);
-            player.jumpsLeft--;
-            spawnParticles(player.x + player.w/2, player.y + player.h, 4, '#ffd700');
-        }
-    }
-    if (!jumpKey) player.jumpPressed = false;
-
-    // Gravity
-    player.vy += player.gravity;
-    if (player.vy > 15) player.vy = 15;
-
-    // Apply velocity and check collisions
-    player.x += player.vx;
-    player.grounded = false;
-
-    // Horizontal collision
-    for (let p of platforms) {
-        if (p.disappeared) continue;
-        if (rectCollide(player, p)) {
-            if (player.vx > 0) player.x = p.x - player.w;
-            else if (player.vx < 0) player.x = p.x + p.w;
-        }
-    }
-
-    player.y += player.vy;
-
-    // Vertical collision
-    for (let p of platforms) {
-        if (p.disappeared) continue;
-        if (rectCollide(player, p)) {
-            if (player.vy > 0) {
-                player.y = p.y - player.h;
-                player.vy = 0;
-                player.grounded = true;
-                player.jumpsLeft = player.maxJumps;
-
-                // Spring bounce
-                if (p.type === 'spring') {
-                    player.vy = -20;
-                    player.grounded = false;
-                    spawnParticles(player.x + player.w/2, player.y + player.h, 8, '#00ff88');
-                }
-                // Disappearing platform
-                if (p.type === 'disappear' && !p.touched) {
-                    p.touched = true;
-                    p.disappearTimer = p.timer;
-                }
-                // Move with platform
-                if (p.type === 'moving') {
-                    if (p.moveX) player.x += Math.cos(p.phase) * p.speed * 0.05;
-                }
-            } else if (player.vy < 0) {
-                player.y = p.y + p.h;
-                player.vy = 0;
-            }
-        }
-    }
-
-    // Trail effect
-    if (Math.abs(player.vx) > 0 || Math.abs(player.vy) > 2) {
-        player.trail.push({x: player.x + player.w/2, y: player.y + player.h/2, alpha: 0.5});
-    }
-    player.trail = player.trail.filter(t => { t.alpha -= 0.03; return t.alpha > 0; });
-
-    // Fall off screen
-    if (player.y > 660) killPlayer();
-
-    // Animation
-    player.animTimer++;
-    if (player.animTimer > 8) { player.animTimer = 0; player.animFrame = (player.animFrame + 1) % 4; }
-}
-
-function updatePlatforms() {
-    for (let p of platforms) {
-        if (p.type === 'moving') {
-            p.phase += 0.02;
-            if (p.moveX) p.x = p.origX + Math.sin(p.phase) * p.moveX;
-            if (p.moveY) p.y = p.origY + Math.sin(p.phase) * p.moveY;
-        }
-        if (p.type === 'disappear') {
-            if (p.touched && !p.disappeared) {
-                p.disappearTimer--;
-                if (p.disappearTimer <= 0) {
-                    p.disappeared = true;
-                    p.respawnTimer = 120;
-                    spawnParticles(p.x + p.w/2, p.y + p.h/2, 6, '#aaa');
-                }
-            }
-            if (p.disappeared) {
-                p.respawnTimer--;
-                if (p.respawnTimer <= 0) {
-                    p.disappeared = false;
-                    p.touched = false;
-                }
-            }
-        }
-    }
-}
-
-function updateHazards() {
-    for (let h of hazards) {
-        if (h.type === 'saw') {
-            h.phase += 0.05;
-        }
-        if (h.type === 'wind' && !player.dead) {
-            if (rectCollide(player, h)) {
-                player.vy += h.force * 0.3;
-            }
-        }
-        if (h.type === 'fireball_spawner') {
-            h.phase = (h.phase || 0) + 1;
-            if (h.phase >= h.interval) {
-                h.phase = 0;
-                let vx = 0, vy = 0;
-                if (h.dir === 'up') vy = -4;
-                else if (h.dir === 'down') vy = 4;
-                else if (h.dir === 'left') vx = -4;
-                else if (h.dir === 'right') vx = 4;
-                fireballs.push({x: h.x, y: h.y, w:12, h:12, vx, vy, life:150});
-            }
-        }
-        // Check player collision with spike/lava/saw
-        if ((h.type === 'spike' || h.type === 'lava' || h.type === 'saw') && !player.dead) {
-            let hBox = {...h};
-            if (h.type === 'saw') {
-                hBox = {x: h.x - h.w/2, y: h.y - h.h/2, w: h.w, h: h.h};
-            }
-            if (rectCollide(player, hBox)) {
-                killPlayer();
-            }
-        }
-    }
-
-    // Update fireballs
-    for (let i = fireballs.length - 1; i >= 0; i--) {
-        let fb = fireballs[i];
-        fb.x += fb.vx;
-        fb.y += fb.vy;
-        fb.life--;
-        if (fb.life <= 0 || fb.x < -50 || fb.x > 1010 || fb.y < -50 || fb.y > 690) {
-            fireballs.splice(i, 1);
-            continue;
-        }
-        if (!player.dead && rectCollide(player, fb)) {
-            killPlayer();
-        }
-    }
-}
-
-function updateStars() {
-    for (let s of levelStars) {
-        if (s.collected) continue;
-        s.bobPhase += 0.05;
-        let sBox = {x: s.x - 12, y: s.y - 12 + Math.sin(s.bobPhase) * 3, w: 24, h: 24};
-        if (rectCollide(player, sBox)) {
-            s.collected = true;
-            stars++;
-            spawnParticles(s.x, s.y, 10, '#ffd700');
-        }
-    }
-}
-
-function checkGoal() {
-    const level = levels[currentLevel];
-    const goal = level.goal;
-    const gBox = {x: goal[0] - 20, y: goal[1] - 30, w: 40, h: 60};
-    if (rectCollide(player, gBox)) {
-        winLevel();
-    }
-}
-
-function killPlayer() {
-    player.dead = true;
-    deathCount++;
-    spawnParticles(player.x + player.w/2, player.y + player.h/2, 20, '#ff4444');
-    setTimeout(() => {
-        gameState = 'dead';
-        showScreen('death-screen');
-    }, 800);
-}
-
-function winLevel() {
-    gameState = 'win';
-    if (currentLevel + 1 >= unlockedLevels) {
-        unlockedLevels = Math.min(currentLevel + 2, levels.length);
-    }
-    document.getElementById('win-title').textContent =
-        currentLevel >= levels.length - 1 ? '恭喜通关！全部完成！' : '关卡通过！';
-    document.getElementById('win-info').textContent =
-        `收集星星: ${stars}/${totalStars} | 死亡次数: ${deathCount}`;
-    showScreen('win-screen');
-}
-
-// ============ PARTICLES ============
-function spawnParticles(x, y, count, color) {
+// Source module: adventure-engine.js
+const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+const near = (p, q, radius = 38) => Math.hypot(p.x + p.w / 2 - q.x, p.y + p.h / 2 - q.y) < radius;
+class Adventure {
+  constructor(notify = () => {}) {
+    this.notify = notify;
+    this.keys = new Set();
+    this.queue = new Set();
+    this.state = 'home';
+    this.camera = 0;
+    this.time = 0;
+    this.particles = [];
+    this.preview(0);
+  }
+  preview(index) {
+    this.load(index, 'explore');
+    this.state = 'home';
+  }
+  load(index, mode, active = null) {
+    this.level = makeLevel(index);
+    this.mode = MODES[mode] || MODES.explore;
+    this.modeId = mode;
+    this.platforms = this.level.platforms.map(p => ({ ...p, ox: p.x, oy: p.y, dx: 0, dy: 0, age: 0, gone: 0, touched: false }));
+    this.collected = new Set(active?.stars || []);
+    this.seeds = new Set(active?.seeds || []);
+    this.friendFound = !!active?.friend;
+    this.badgeFound = !!active?.badge;
+    this.puzzle = active?.puzzle || 0;
+    this.checkpoint = this.level.checkpoints.find(c => c.id === active?.checkpoint) || null;
+    this.time = active?.time || 0;
+    this.falls = 0;
+    this.cooldown = 0;
+    this.hintCooldown = 0;
+    this.particles = [];
+    this.respawn(false);
+    this.camera = Math.max(0, this.player.x - 240);
+    this.state = 'playing';
+    this.clearInput();
+  }
+  clearInput() { this.keys.clear(); this.queue.clear(); }
+  press(action) { if (!this.keys.has(action)) this.queue.add(action); this.keys.add(action); }
+  release(action) { this.keys.delete(action); }
+  snapshot() {
+    return { level: this.level.id, checkpoint: this.checkpoint?.id ?? null, stars: [...this.collected], seeds: [...this.seeds], friend: this.friendFound, badge: this.badgeFound, puzzle: this.puzzle, time: this.time };
+  }
+  emit(type, text) { this.notify({ type, text, game: this }); }
+  burst(x, y, color, count = 15) {
     for (let i = 0; i < count; i++) {
-        particles.push({
-            x, y,
-            vx: (Math.random() - 0.5) * 6,
-            vy: (Math.random() - 0.5) * 6 - 2,
-            life: 30 + Math.random() * 20,
-            color, size: 3 + Math.random() * 4
-        });
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 35 + Math.random() * 95;
+      this.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.7, color });
     }
-}
-
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.15;
-        p.life--;
-        p.size *= 0.97;
-        if (p.life <= 0) particles.splice(i, 1);
+    if (this.particles.length > 160) this.particles.splice(0, this.particles.length - 160);
+  }
+  respawn(animate = true) {
+    const s = this.checkpoint ? { x: this.checkpoint.x, y: this.checkpoint.y - 42 } : this.level.spawn;
+    this.player = { x: s.x, y: s.y, w: 28, h: 42, vx: 0, vy: 0, facing: 1, grounded: false, support: null, jumps: this.mode.jumps, coyote: 0, buffer: 0, wall: 0, wallLock: 0, dash: 0, dashReady: true, invincible: animate ? 2.2 : 0, glide: false };
+    this.cooldown = 0;
+    if (animate) this.burst(s.x + 14, s.y + 20, '#b8f3d7', 24);
+  }
+  fall() {
+    if (this.cooldown > 0 || this.state !== 'playing') return;
+    this.falls++;
+    this.cooldown = 0.55;
+    this.burst(this.player.x + 14, this.player.y + 20, '#dfc4ef', 20);
+    this.emit('rescue', this.falls >= 3 ? '休息一下也没关系。暂停菜单里可以请求星光引路。' : '米露接住你啦！星星都还在，从灯笼旁继续吧。');
+  }
+  assist() {
+    const next = this.level.checkpoints.find(c => c.x > this.player.x + 30);
+    if (!next) { this.emit('hint', this.level.tip); return; }
+    if (this.level.id === 3 && this.puzzle < 3 && next.x > 2500) {
+      this.emit('hint', '先点亮月亮、星星、太阳，星光桥就会出现。引路不会跳过谜题。'); return;
     }
-}
-
-// ============ RENDERING ============
-function drawBackground(level) {
-    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, level.bg.top);
-    grad.addColorStop(1, level.bg.bottom);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-function drawDecorations(level) {
-    for (let d of decorations) {
-        ctx.save();
-        if (d.type === 'tree') {
-            ctx.fillStyle = '#2d5016';
-            ctx.fillRect(d.x + 15, d.y - 30, 10, 40);
-            ctx.fillStyle = '#3a7020';
-            ctx.beginPath();
-            ctx.arc(d.x + 20, d.y - 40, 25, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (d.type === 'bush') {
-            ctx.fillStyle = '#2a6018';
-            ctx.beginPath();
-            ctx.arc(d.x + 15, d.y, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(d.x + 30, d.y - 3, 12, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (d.type === 'cloud') {
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.beginPath();
-            ctx.arc(d.x, d.y, 20, 0, Math.PI * 2);
-            ctx.arc(d.x + 25, d.y - 5, 25, 0, Math.PI * 2);
-            ctx.arc(d.x + 50, d.y, 20, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (d.type === 'torch') {
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(d.x + 5, d.y - 20, 6, 25);
-            // Flame
-            let flicker = Math.sin(frameCount * 0.1 + d.x) * 3;
-            ctx.fillStyle = '#ff6600';
-            ctx.beginPath();
-            ctx.arc(d.x + 8, d.y - 25 + flicker, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ffcc00';
-            ctx.beginPath();
-            ctx.arc(d.x + 8, d.y - 27 + flicker, 5, 0, Math.PI * 2);
-            ctx.fill();
+    this.checkpoint = next;
+    this.respawn();
+    this.camera = Math.max(0, this.player.x - 240);
+    this.emit('checkpoint', '星光把你带到下一盏灯笼。准备好了就继续吧。');
+  }
+  isSolid(p) {
+    if (p.type === 'bridge') return this.puzzle === 3;
+    return p.gone <= 0 && !(p.type === 'gate' && this.puzzle === 3);
+  }
+  updatePlatforms(dt) {
+    for (const p of this.platforms) {
+      const lastX = p.x, lastY = p.y;
+      if (p.type === 'moving') {
+        const offset = Math.sin(this.time * 1.2 + p.phase) * p.range;
+        p.x = p.ox + (p.axis === 'x' ? offset : 0);
+        p.y = p.oy + (p.axis === 'y' ? offset : 0);
+      }
+      if (p.gone > 0) { p.gone -= dt; if (p.gone <= 0) { p.touched = false; p.age = 0; } }
+      else if (p.type === 'crumble' && p.touched) {
+        p.age += dt;
+        if (p.age > this.mode.crumble) { p.gone = 2.5; this.burst(p.x + p.w / 2, p.y, '#b3eeec', 6); }
+      }
+      p.dx = p.x - lastX; p.dy = p.y - lastY;
+    }
+  }
+  step(dt) {
+    if (this.state !== 'playing') return;
+    this.time += dt;
+    this.hintCooldown = Math.max(0, this.hintCooldown - dt);
+    for (const p of this.particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 70 * dt; p.life -= dt; }
+    this.particles = this.particles.filter(p => p.life > 0);
+    if (this.cooldown > 0) {
+      this.cooldown -= dt;
+      if (this.cooldown <= 0) this.respawn();
+      this.queue.clear(); return;
+    }
+    this.updatePlatforms(dt);
+    const p = this.player;
+    const k = this.keys;
+    p.invincible = Math.max(0, p.invincible - dt);
+    p.wallLock = Math.max(0, p.wallLock - dt);
+    p.coyote = p.grounded ? 0.12 : Math.max(0, p.coyote - dt);
+    p.buffer = this.queue.has('jump') ? 0.14 : Math.max(0, p.buffer - dt);
+    const support = this.platforms.find(b => b.id === p.support && this.isSolid(b));
+    if (support && p.grounded) { p.x += support.dx; p.y += support.dy; }
+    const move = (k.has('right') ? 1 : 0) - (k.has('left') ? 1 : 0);
+    if (move) p.facing = move;
+    if (p.wallLock === 0 && p.dash <= 0) {
+      const target = move * this.mode.speed;
+      p.vx += (target - p.vx) * Math.min(1, dt * (p.grounded ? 20 : 12));
+    }
+    if (p.buffer > 0 && (p.coyote > 0 || p.jumps > 0 || p.wall)) {
+      if (p.wall && !p.grounded) {
+        p.vx = -p.wall * 365; p.vy = -530; p.wallLock = 0.18; p.jumps = this.mode.jumps - 1;
+      } else {
+        if (p.coyote > 0) p.jumps = this.mode.jumps;
+        p.vy = p.jumps === this.mode.jumps ? -555 : -500;
+        p.jumps--;
+      }
+      p.buffer = 0; p.coyote = 0; p.grounded = false; p.support = null;
+      this.burst(p.x + 14, p.y + 42, '#f7df9d', 7); this.emit('jump');
+    }
+    if (this.queue.has('dash') && p.dashReady && this.level.id >= 2) {
+      p.dash = 0.16; p.dashReady = false; p.vx = p.facing * 690; p.vy = 0;
+      this.burst(p.x + 14, p.y + 20, '#c6edff', 12); this.emit('dash');
+    }
+    p.glide = this.level.id >= 2 && k.has('jump') && p.vy > 0 && !p.grounded;
+    if (p.dash > 0) { p.dash -= dt; p.vy = 0; }
+    else p.vy = Math.min(p.vy + (p.glide ? 300 : 1450) * dt, p.glide ? 125 : 760);
+    for (const wind of this.level.winds) if (overlaps(p, wind)) p.vy = Math.max(-280, p.vy - 2100 * dt);
+    if (p.wall && move === p.wall && p.vy > 110) p.vy = 110;
+    p.wall = 0;
+    p.x += p.vx * dt;
+    const solids = this.platforms.filter(b => this.isSolid(b));
+    for (const b of solids) {
+      if (!overlaps(p, b) || b.type === 'spring') continue;
+      if (p.vx > 0) { p.x = b.x - p.w; p.wall = 1; }
+      else if (p.vx < 0) { p.x = b.x + b.w; p.wall = -1; }
+      p.vx = 0;
+    }
+    p.x = Math.max(0, Math.min(this.level.width - p.w, p.x));
+    p.y += p.vy * dt;
+    p.grounded = false; p.support = null;
+    for (const b of solids) {
+      if (!overlaps(p, b)) continue;
+      const walkingOntoSpring = b.type === 'spring' && p.y + p.h <= b.y + b.h + 2;
+      if (p.vy >= 0 && (walkingOntoSpring || p.y + p.h - p.vy * dt <= b.y + Math.max(10, Math.abs(b.dy) + 2))) {
+        p.y = b.y - p.h; p.vy = 0; p.grounded = true; p.support = b.id; p.jumps = this.mode.jumps; p.dashReady = true;
+        if (b.type === 'spring') {
+          p.vy = -780; p.grounded = false; p.support = null; this.burst(p.x + 14, b.y, '#ffd0bf', 16); this.emit('spring');
         }
-        ctx.restore();
+        if (b.type === 'crumble') b.touched = true;
+      } else if (p.vy < 0 && b.type !== 'spring') { p.y = b.y + b.h; p.vy = 0; }
     }
+    if (p.y > 650) { this.fall(); this.queue.clear(); return; }
+    if (p.y < -65) { p.y = -65; p.vy = Math.max(p.vy, 0); }
+    for (const hazard of this.level.hazards) {
+      const h = hazard.type === 'wisp' ? { ...hazard, y: hazard.y + Math.sin(this.time * this.mode.hazardSpeed * 2 + hazard.phase) * 38 } : hazard;
+      if (p.invincible <= 0 && p.dash <= 0 && overlaps({ x: p.x + 5, y: p.y + 6, w: p.w - 10, h: p.h - 8 }, h)) { this.fall(); this.queue.clear(); return; }
+    }
+    for (const s of this.level.stars) if (!this.collected.has(s.id) && near(p, s, this.modeId === 'explore' ? 42 : 31)) {
+      this.collected.add(s.id); this.burst(s.x, s.y, '#ffe4a1', 8); this.emit('star');
+    }
+    for (const s of this.level.seedItems) if (!this.seeds.has(s.id) && near(p, s, 39)) {
+      this.seeds.add(s.id); this.burst(s.x, s.y, '#ffe4a1', 20); this.emit('seed', `找到星光种子 ${this.seeds.size}/3`);
+    }
+    if (!this.friendFound && near(p, this.level.friend, 44)) {
+      this.friendFound = true; this.burst(this.level.friend.x, this.level.friend.y, '#f3cae5', 24); this.emit('friend', `${this.level.friend.name}愿意和你一起旅行了！`);
+    }
+    if (!this.badgeFound && near(p, this.level.badge, 37)) {
+      this.badgeFound = true; this.burst(this.level.badge.x, this.level.badge.y, '#f6d083', 24); this.emit('badge', '找到秘密旅行徽章！你的好奇心值得被奖励。');
+    }
+    for (const c of this.level.checkpoints) if (near(p, { x: c.x, y: c.y - 28 }, 48) && (!this.checkpoint || c.x > this.checkpoint.x)) {
+      this.checkpoint = c; this.burst(c.x, c.y - 35, '#d1f4d8', 18); this.emit('checkpoint', '灯笼点亮了。已记住你的旅程。');
+    }
+    if (this.queue.has('interact')) {
+      const rune = this.level.switches.find(s => near(p, s, 70));
+      if (rune && this.puzzle < 3) {
+        if (rune.id === this.puzzle) { this.puzzle++; this.burst(rune.x, rune.y, '#e3c9ff', 20); this.emit('rune', this.puzzle === 3 ? '星光桥醒来了！向右出发吧。' : `${rune.name}亮起来了。再找下一枚符文。`); }
+        else { this.puzzle = 0; this.emit('hint', '顺序重新开始：月亮 → 星星 → 太阳。慢慢来。'); }
+      }
+    }
+    const goal = this.level.goal;
+    if (overlaps(p, { x: goal.x - 22, y: goal.y - 12, w: 74, h: 90 })) {
+      if (this.level.id === 5 && this.seeds.size < 3) {
+        if (this.hintCooldown === 0) { this.emit('hint', `还差 ${3 - this.seeds.size} 颗种子。金色种子在第 3、7、10 座小岛，向左找找吧。`); this.hintCooldown = 5; }
+      } else { this.state = 'won'; this.clearInput(); this.emit('win'); }
+    }
+    this.queue.clear();
+    const view = this.viewWidth || 1100;
+    this.camera += (Math.min(this.level.width - view, Math.max(0, p.x - view * 0.35)) - this.camera) * Math.min(1, dt * 6);
+  }
 }
 
-function drawPlatforms() {
-    for (let p of platforms) {
-        if (p.disappeared) continue;
-        ctx.save();
 
-        if (p.type === 'solid') {
-            ctx.fillStyle = currentLevel === 0 ? '#4a7c3f' :
-                           currentLevel === 1 ? '#b8d4e3' : '#8b4513';
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            // Top grass/snow/stone line
-            ctx.fillStyle = currentLevel === 0 ? '#6abd4f' :
-                           currentLevel === 1 ? '#fff' : '#a0522d';
-            ctx.fillRect(p.x, p.y, p.w, 4);
-        } else if (p.type === 'moving') {
-            ctx.fillStyle = '#5588cc';
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.fillStyle = '#77aaee';
-            ctx.fillRect(p.x, p.y, p.w, 3);
-            // Arrow indicators
-            ctx.fillStyle = '#fff';
-            ctx.globalAlpha = 0.5;
-            ctx.fillRect(p.x + p.w/2 - 8, p.y + p.h/2 - 1, 16, 2);
-        } else if (p.type === 'disappear') {
-            let alpha = 1;
-            if (p.touched && !p.disappeared) {
-                alpha = p.disappearTimer / p.timer;
-                // Shake effect
-                ctx.translate(Math.random() * 2 - 1, Math.random() * 2 - 1);
-            }
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#cc6644';
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.strokeStyle = '#ff8866';
-            ctx.strokeRect(p.x, p.y, p.w, p.h);
-        } else if (p.type === 'spring') {
-            ctx.fillStyle = '#44dd44';
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            // Spring coil look
-            ctx.strokeStyle = '#228822';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(p.x + p.w/2, p.y + 3 + i * 3, 8, 0, Math.PI);
-                ctx.stroke();
-            }
-        }
-        ctx.restore();
-    }
+// Source module: adventure-art.js
+const TAU = Math.PI * 2;
+function ellipse(ctx, x, y, rx, ry, color) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
 }
-
-function drawHazards() {
-    for (let h of hazards) {
-        ctx.save();
-        if (h.type === 'spike') {
-            ctx.fillStyle = '#ff3333';
-            ctx.beginPath();
-            ctx.moveTo(h.x, h.y + h.h);
-            ctx.lineTo(h.x + h.w/2, h.y);
-            ctx.lineTo(h.x + h.w, h.y + h.h);
-            ctx.fill();
-        } else if (h.type === 'lava') {
-            ctx.fillStyle = '#ff4400';
-            ctx.fillRect(h.x, h.y, h.w, h.h);
-            // Lava bubbles
-            ctx.fillStyle = '#ffaa00';
-            for (let i = 0; i < 8; i++) {
-                let bx = h.x + (i * 120 + frameCount * 0.5) % h.w;
-                let by = h.y + Math.sin(frameCount * 0.03 + i) * 5;
-                ctx.beginPath();
-                ctx.arc(bx, by, 4 + Math.sin(frameCount * 0.05 + i) * 2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        } else if (h.type === 'saw') {
-            ctx.translate(h.x, h.y);
-            ctx.rotate(h.phase);
-            ctx.fillStyle = '#aaa';
-            ctx.beginPath();
-            let r = h.w / 2;
-            for (let i = 0; i < 12; i++) {
-                let angle = (i / 12) * Math.PI * 2;
-                let outerR = i % 2 === 0 ? r : r * 0.7;
-                ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR);
-            }
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = '#666';
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (h.type === 'wind') {
-            ctx.globalAlpha = 0.15;
-            ctx.fillStyle = '#88ccff';
-            ctx.fillRect(h.x, h.y, h.w, h.h);
-            // Wind lines
-            ctx.globalAlpha = 0.4;
-            ctx.strokeStyle = '#88ccff';
-            for (let i = 0; i < 5; i++) {
-                let ly = h.y + (h.h / 5) * i + (frameCount * 2 + i * 30) % h.h;
-                if (ly > h.y + h.h) ly -= h.h;
-                ctx.beginPath();
-                ctx.moveTo(h.x + 5, ly);
-                ctx.lineTo(h.x + h.w - 5, ly - 10);
-                ctx.stroke();
-            }
-        } else if (h.type === 'fireball_spawner') {
-            ctx.fillStyle = '#ff6600';
-            ctx.fillRect(h.x - 5, h.y - 5, 20, 20);
-            ctx.fillStyle = '#ffcc00';
-            ctx.fillRect(h.x - 2, h.y - 2, 14, 14);
-        }
-        ctx.restore();
-    }
-
-    // Draw fireballs
-    for (let fb of fireballs) {
-        ctx.save();
-        ctx.fillStyle = '#ff4400';
-        ctx.beginPath();
-        ctx.arc(fb.x + 6, fb.y + 6, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffcc00';
-        ctx.beginPath();
-        ctx.arc(fb.x + 6, fb.y + 6, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
+function rounded(ctx, x, y, w, h, r, color) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
 }
-
-function drawStars() {
-    for (let s of levelStars) {
-        if (s.collected) continue;
-        ctx.save();
-        let by = Math.sin(s.bobPhase) * 3;
-        ctx.translate(s.x, s.y + by);
-        ctx.fillStyle = '#ffd700';
-        // Draw star shape
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-            let angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
-            let r = 10;
-            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-        }
-        ctx.closePath();
-        ctx.fill();
-        // Glow
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.restore();
-    }
+function starShape(ctx, x, y, radius, color, spin = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(spin); ctx.fillStyle = color; ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2; const r = i % 2 ? radius * 0.46 : radius; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
 }
-
-function drawGoal() {
-    const level = levels[currentLevel];
-    const gx = level.goal[0], gy = level.goal[1];
-    ctx.save();
-    // Flag pole
-    ctx.fillStyle = '#ddd';
-    ctx.fillRect(gx - 2, gy - 30, 4, 60);
-    // Flag
-    let wave = Math.sin(frameCount * 0.05) * 3;
-    ctx.fillStyle = '#ff4444';
-    ctx.beginPath();
-    ctx.moveTo(gx + 2, gy - 30);
-    ctx.lineTo(gx + 30 + wave, gy - 20);
-    ctx.lineTo(gx + 2, gy - 10);
-    ctx.fill();
-    // Glow
-    ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.05) * 0.1;
-    ctx.fillStyle = '#ff4444';
-    ctx.beginPath();
-    ctx.arc(gx, gy - 15, 25, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+function line(ctx, points, color, width = 2) {
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+  points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
 }
-
-function drawPlayer() {
-    if (player.dead) return;
-
-    // Trail
-    for (let t of player.trail) {
-        ctx.save();
-        ctx.globalAlpha = t.alpha * 0.3;
-        ctx.fillStyle = '#88ccff';
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+function drawFriend(ctx, x, y, species, t, scale = 1) {
+  ctx.save(); ctx.translate(x, y + Math.sin(t * 3) * 3); ctx.scale(scale, scale);
+  const colors = { '狐': '#edbb90', '兔': '#f1dfdb', '鸮': '#cbbda3', '猫': '#a7a5ca', '龙': '#9ac5b7', '灵': '#f2d995' };
+  const c = colors[species] || colors['狐'];
+  ellipse(ctx, 0, 12, 17, 4, '#172d3633');
+  if (species === '灵') { starShape(ctx, 0, 0, 19, c, t * 0.25); }
+  else {
+    if (species === '狐') { ctx.save(); ctx.rotate(-0.4); ellipse(ctx, -16, 2, 15, 7, c); ellipse(ctx, -25, 2, 6, 6, '#fff0d5'); ctx.restore(); }
+    if (species === '龙' || species === '鸮') { ellipse(ctx, -16, -2, 11, 7, c); ellipse(ctx, 16, -2, 11, 7, c); }
+    ellipse(ctx, 0, 1, 15, 13, c);
+    if (species === '兔') { ellipse(ctx, -7, -18, 5, 16, c); ellipse(ctx, 7, -18, 5, 16, c); ellipse(ctx, -7, -20, 2, 10, '#e5aaa6'); ellipse(ctx, 7, -20, 2, 10, '#e5aaa6'); }
+    else if (species !== '鸮') {
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(-14, -5); ctx.lineTo(-11, -23); ctx.lineTo(-1, -10); ctx.lineTo(10, -23); ctx.lineTo(14, -4); ctx.fill();
     }
-
-    ctx.save();
-    ctx.translate(player.x + player.w/2, player.y + player.h/2);
-    ctx.scale(player.facing, 1);
-
-    // Body
-    ctx.fillStyle = '#4488ff';
-    ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
-
-    // Eyes
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(2, -player.h/2 + 8, 8, 8);
-    ctx.fillStyle = '#222';
-    ctx.fillRect(5, -player.h/2 + 10, 4, 4);
-
-    // Mouth (smile)
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(4, -player.h/2 + 22, 5, 0, Math.PI);
-    ctx.stroke();
-
-    // Running legs animation
-    if (player.grounded && Math.abs(player.vx) > 0) {
-        let legOffset = Math.sin(player.animFrame * Math.PI / 2) * 4;
-        ctx.fillStyle = '#3366cc';
-        ctx.fillRect(-6, player.h/2 - 4, 6, 6 + legOffset);
-        ctx.fillRect(2, player.h/2 - 4, 6, 6 - legOffset);
+    ellipse(ctx, 0, 5, 9, 7, '#fff5de');
+  }
+  ellipse(ctx, -5, -2, 1.7, 2.2, '#31424e'); ellipse(ctx, 5, -2, 1.7, 2.2, '#31424e');
+  ellipse(ctx, 0, 4, 1.5, 1.2, '#805c65');
+  ctx.restore();
+}
+function drawHero(ctx, x, y, outfit, t, moving = false, facing = 1, glide = false, scale = 1) {
+  const clothes = OUTFITS[outfit] || OUTFITS[0];
+  ctx.save(); ctx.translate(x + 14, y + 21); ctx.scale(scale * facing, scale);
+  const stride = moving ? Math.sin(t * 14) * 5 : 0;
+  ellipse(ctx, 0, 23, 16, 3, '#14303e44');
+  rounded(ctx, -9 + stride, 10, 7, 13, 3, '#3d435b'); rounded(ctx, 3 - stride, 10, 7, 13, 3, '#3d435b');
+  rounded(ctx, -12 + stride, 21, 10, 5, 2, '#ead4b8'); rounded(ctx, 2 - stride, 21, 10, 5, 2, '#ead4b8');
+  rounded(ctx, -14, -7, 10, 20, 4, '#b89070');
+  ctx.fillStyle = clothes.coat; ctx.beginPath(); ctx.moveTo(-9, -8); ctx.quadraticCurveTo(-13, 6, -14, 14); ctx.quadraticCurveTo(0, 20, 14, 14); ctx.lineTo(9, -8); ctx.fill();
+  rounded(ctx, -14, -3, 5, 14, 3, clothes.coat); rounded(ctx, 9, -3, 5, 14, 3, clothes.coat);
+  ellipse(ctx, -11, 10, 3, 3, '#f5d4bc'); ellipse(ctx, 11, 10, 3, 3, '#f5d4bc');
+  ellipse(ctx, 0, -19, 14, 15, '#654744'); ellipse(ctx, -9, -9, 6, 12, '#654744');
+  ellipse(ctx, 0, -16, 11, 12, '#f5d4bc');
+  ctx.fillStyle = '#654744'; ctx.beginPath(); ctx.moveTo(-12, -18); ctx.quadraticCurveTo(-8, -37, 11, -24); ctx.lineTo(12, -15); ctx.quadraticCurveTo(7, -15, 2, -25); ctx.quadraticCurveTo(-5, -17, -12, -18); ctx.fill();
+  ellipse(ctx, -4, -15, 1.2, 1.8, '#423947'); ellipse(ctx, 5, -15, 1.2, 1.8, '#423947');
+  ellipse(ctx, -7, -11, 2.8, 1.5, '#e9a9a1'); ellipse(ctx, 8, -11, 2.8, 1.5, '#e9a9a1');
+  line(ctx, [[0, -9], [3, -9]], '#a16e69', 1);
+  rounded(ctx, -10, -5, 20, 5, 2, clothes.scarf);
+  ctx.fillStyle = clothes.scarf; ctx.beginPath(); ctx.moveTo(-7, -3); ctx.quadraticCurveTo(-24, -5 + Math.sin(t * 6) * 4, -29, -1); ctx.lineTo(-25, 5); ctx.quadraticCurveTo(-18, 1, -7, 2); ctx.fill();
+  starShape(ctx, 10, -26, 5, clothes.scarf);
+  if (glide) {
+    line(ctx, [[-10, 4], [-39, -38], [0, -55], [39, -38], [12, 4]], '#e9dcae', 1.5);
+    ctx.fillStyle = '#b5dfcddd'; ctx.beginPath(); ctx.moveTo(-45, -39); ctx.quadraticCurveTo(0, -81, 45, -39); ctx.quadraticCurveTo(0, -53, -45, -39); ctx.fill();
+  }
+  ctx.restore();
+}
+class Painter {
+  constructor(canvas) {
+    this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.width = 1100; this.height = 600;
+    this.canvas.width = 1650; this.canvas.height = 900;
+  }
+  background(theme, camera, t, reduced) {
+    const c = this.ctx;
+    const gradient = c.createLinearGradient(0, 0, 0, 600); gradient.addColorStop(0, theme.sky[0]); gradient.addColorStop(1, theme.sky[1]);
+    c.fillStyle = gradient; c.fillRect(0, 0, 1100, 600);
+    const glow = c.createRadialGradient(855, 145, 15, 855, 145, 220); glow.addColorStop(0, theme.light + '50'); glow.addColorStop(1, theme.light + '00');
+    c.fillStyle = glow; c.fillRect(560, 0, 540, 480);
+    ellipse(c, 855 - camera * 0.025, 130, theme.id < 3 ? 43 : 33, theme.id < 3 ? 43 : 33, theme.light);
+    if (theme.id === 3 || theme.id === 5) ellipse(c, 871 - camera * 0.025, 119, 31, 31, theme.sky[0]);
+    for (let i = 0; i < 42; i++) {
+      const x = ((i * 137.83 - camera * 0.09) % 1160 + 1160) % 1160;
+      const y = 30 + (i * 53.57) % 340;
+      c.globalAlpha = reduced ? 0.35 : 0.24 + Math.sin(t * 0.7 + i) * 0.15;
+      starShape(c, x, y, i % 5 ? 1.7 : 4, '#fff4d6');
+    }
+    c.globalAlpha = 1;
+    for (let layer = 0; layer < 3; layer++) {
+      c.fillStyle = ['#28495844', '#244f594d', '#23485055'][layer]; c.beginPath(); c.moveTo(0, 600);
+      for (let x = 0; x <= 1150; x += 25) {
+        const worldX = x + camera * (0.13 + layer * 0.1);
+        c.lineTo(x, 345 + layer * 66 + Math.sin(worldX / (130 - layer * 20) + layer) * 35 + Math.sin(worldX / 270) * 30);
+      }
+      c.lineTo(1150, 600); c.fill();
+    }
+    for (let i = 0; i < 14; i++) {
+      const x = ((i * 113 - camera * 0.32) % 1500 + 1500) % 1500 - 100;
+      const y = 445 + Math.sin(i * 2) * 35;
+      c.globalAlpha = 0.22;
+      if (theme.id === 3) {
+        rounded(c, x, y - 160, 58, 205, 24, '#272845'); rounded(c, x + 12, y - 145, 34, 180, 17, '#a09bb2');
+      } else if (theme.id === 4) {
+        c.fillStyle = '#96d7d5'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 20, y - 125); c.lineTo(x + 48, y - 32); c.lineTo(x + 33, y + 20); c.fill();
+      } else if (theme.id === 2) {
+        ellipse(c, x, y - 120, 75, 18, '#e7f2f2'); ellipse(c, x + 24, y - 132, 30, 25, '#e7f2f2');
+      } else { this.tree(x, y, 0.8 + i % 3 * 0.2, theme.id === 1 ? '#9c7795' : '#417568'); }
+      c.globalAlpha = 1;
+    }
+  }
+  tree(x, y, size, color) {
+    const c = this.ctx; c.save(); c.translate(x, y); c.scale(size, size);
+    rounded(c, -5, -95, 10, 108, 4, '#486054');
+    line(c, [[0, -40], [-24, -73]], '#486054', 5); line(c, [[0, -65], [22, -95]], '#486054', 4);
+    ellipse(c, 0, -130, 46, 66, color); ellipse(c, -23, -101, 34, 45, color); ellipse(c, 22, -114, 30, 45, color);
+    c.globalAlpha *= 0.25; ellipse(c, -15, -140, 18, 38, '#cbe2b1'); c.restore();
+  }
+  platform(b, theme, time, puzzle, crumble) {
+    const c = this.ctx;
+    if (b.type === 'bridge' && puzzle < 3) return;
+    if (b.type === 'bridge') {
+      rounded(c, b.x, b.y, b.w, b.h, 6, '#ead8a6');
+      for (let i = 0; i < 8; i++) starShape(c, b.x + 9 + i * 16, b.y + 8, 3, '#fff3d6');
+      return;
+    }
+    if (b.gone > 0) { c.globalAlpha = 0.12; rounded(c, b.x, b.y, b.w, b.h, 8, '#d8f2ee'); c.globalAlpha = 1; return; }
+    if (b.type === 'gate') {
+      if (puzzle === 3) {
+        for (let i = 0; i < 6; i++) starShape(c, b.x - 20 + i * 12, 460 + Math.sin(time * 2 + i) * 4, 3, '#efcf94'); return;
+      }
+      const beam = c.createLinearGradient(b.x, 0, b.x + b.w, 0); beam.addColorStop(0, '#d4bbf422'); beam.addColorStop(0.5, '#dfc9ffbb'); beam.addColorStop(1, '#d4bbf422');
+      c.fillStyle = beam; c.fillRect(b.x, 0, b.w, 600); c.font = '16px serif'; c.fillStyle = '#f5e4ff'; c.fillText('星光结界', b.x - 22, 270); return;
+    }
+    if (b.type === 'spring') {
+      rounded(c, b.x + 15, b.y + 2, 15, 16, 4, '#eddbc1'); ellipse(c, b.x + 22, b.y + 2, 26, 10, '#e2a09b');
+      for (let j = 0; j < 3; j++) ellipse(c, b.x + 8 + j * 12, b.y, 3, 2, '#f9e4d0'); return;
+    }
+    if (b.type === 'ground') {
+      rounded(c, b.x, b.y, b.w, b.h, [14, 14, 28, 28], theme.land);
+      rounded(c, b.x, b.y, b.w, 13, 7, theme.color);
+      c.globalAlpha = 0.17;
+      for (let j = 0; j < 7; j++) ellipse(c, b.x + 20 + j * 33, b.y + 36 + (j % 3) * 18, 12, 6, '#152e3b');
+      c.globalAlpha = 1;
+      for (let j = 0; j < 11; j++) {
+        const x = b.x + 15 + j * 21;
+        line(c, [[x - 3, b.y], [x - 5, b.y - 9], [x + 1, b.y], [x + 5, b.y - 12]], theme.color, 1.5);
+        if (j % 3 === 0) { line(c, [[x, b.y - 2], [x, b.y - 17]], theme.color, 1.5); ellipse(c, x, b.y - 18, 3, 3, theme.light); }
+      }
+      if (Math.round(b.x / 330) % 3 === 0) this.tree(b.x + b.w - 55, b.y - 5, 0.55, theme.id === 1 ? '#b997a5' : '#719785');
     } else {
-        ctx.fillStyle = '#3366cc';
-        ctx.fillRect(-6, player.h/2 - 4, 6, 6);
-        ctx.fillRect(2, player.h/2 - 4, 6, 6);
+      const color = b.type === 'moving' ? '#d1e7ec' : b.type === 'crumble' ? '#9bdfd9' : theme.color;
+      rounded(c, b.x, b.y, b.w, b.h, 9, color); rounded(c, b.x + 4, b.y + 3, b.w - 8, 4, 2, '#ffffff44');
+      if (b.type === 'crumble') {
+        line(c, [[b.x + 50, b.y], [b.x + 58, b.y + 9], [b.x + 47, b.y + 18]], '#4a8f91', 2);
+        if (b.touched) rounded(c, b.x, b.y - 6, b.w * Math.max(0, 1 - b.age / crumble), 3, 1, '#f5d998');
+      }
+      if (b.type === 'moving') { c.fillStyle = '#719da9'; c.font = '13px serif'; c.fillText(b.axis === 'x' ? '↔' : '↕', b.x + b.w / 2 - 5, b.y + 14); }
+      for (let j = 0; j < 3; j++) line(c, [[b.x + 25 + j * 30, b.y + 18], [b.x + 23 + j * 30, b.y + 31]], theme.color + '66', 2);
     }
-
-    // Wall sliding indicator
-    if (player.wallSliding) {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        for (let i = 0; i < 3; i++) {
-            ctx.fillRect(-player.w/2 - 3, -5 + i * 8, 3, 5);
+  }
+  render(game, options = {}) {
+    const c = this.ctx, level = game.level;
+    if (!c || !level) return;
+    const width = game.state === 'home' ? 1100 : Math.round(Math.max(480, Math.min(1500, this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight) * 600)));
+    if (this.width !== width) { this.width = width; this.canvas.width = width * 1.5; }
+    game.viewWidth = width;
+    const t = options.reduced ? 0 : (game.state === 'home' ? performance.now() / 1000 : game.time);
+    c.setTransform(1.5, 0, 0, 1.5, 0, 0);
+    if (width > 1100) { c.save(); c.scale(width / 1100, 1); this.background(level, game.state === 'home' ? 0 : game.camera, t, options.reduced); c.restore(); }
+    else this.background(level, game.state === 'home' ? 0 : game.camera, t, options.reduced);
+    if (game.state === 'home') {
+      this.tree(755, 410, 1.5, '#4e7a6a'); this.tree(970, 450, 0.95, '#638a77');
+      this.platform({ x: 565, y: 470, w: 485, h: 170, type: 'ground', gone: 0 }, level, t, 0, 1);
+      this.platform({ x: 640, y: 319, w: 140, h: 21, type: 'leaf', gone: 0 }, level, t, 0, 1);
+      this.platform({ x: 875, y: 252, w: 160, h: 21, type: 'leaf', gone: 0 }, level, t, 0, 1);
+      drawHero(c, 795, 410, options.outfit || 0, t, false, -1, false, 1.7);
+      drawFriend(c, 865, 449, '狐', t, 1.25);
+      for (let i = 0; i < 7; i++) starShape(c, 650 + i * 51, 280 - Math.sin(i / 6 * Math.PI) * 70 + Math.sin(t + i) * 5, 7, '#f8dfa0', 0.1);
+      this.portal(969, 395, level, t);
+      return;
+    }
+    c.save(); c.translate(-game.camera, 0);
+    for (const wind of level.winds) {
+      rounded(c, wind.x, wind.y, wind.w, wind.h, 25, '#dcf5ed13');
+      for (let i = 0; i < 12; i++) {
+        const x = wind.x + 15 + (i * 19 % 90), y = wind.y + ((i * 43 - t * 55) % wind.h + wind.h) % wind.h;
+        line(c, [[x, y + 18], [x, y], [x - 4, y + 5]], '#d2eeee55', 2);
+      }
+    }
+    for (const b of game.platforms) if (b.x + b.w > game.camera - 100 && b.x < game.camera + 1200) this.platform(b, level, t, game.puzzle, game.mode.crumble);
+    for (const h of level.hazards) {
+      if (h.type === 'thorn') {
+        for (let i = 0; i < 3; i++) { c.fillStyle = '#dd9aab'; c.beginPath(); c.moveTo(h.x + i * 12, h.y + h.h); c.lineTo(h.x + i * 12 + 6, h.y); c.lineTo(h.x + i * 12 + 12, h.y + h.h); c.fill(); }
+      } else {
+        const y = h.y + Math.sin(game.time * game.mode.hazardSpeed * 2 + h.phase) * 38;
+        ellipse(c, h.x + 13, y + 13, 17, 17, '#e6a6be33'); ellipse(c, h.x + 13, y + 13, 11, 11, '#d2a7c9');
+        ellipse(c, h.x + 9, y + 11, 2, 2, '#655976'); ellipse(c, h.x + 17, y + 11, 2, 2, '#655976');
+      }
+    }
+    for (const s of level.stars) if (!game.collected.has(s.id) && s.x > game.camera - 20 && s.x < game.camera + 1130) {
+      const y = s.y + Math.sin(t * 2 + s.x) * 4; ellipse(c, s.x, y, 14, 14, '#f5e2a915'); starShape(c, s.x, y, 8, level.light, 0.1);
+    }
+    for (const s of level.seedItems) if (!game.seeds.has(s.id)) { ellipse(c, s.x, s.y, 18, 22, '#ffe3a333'); ellipse(c, s.x, s.y, 9, 13, '#ebc378'); line(c, [[s.x, s.y + 9], [s.x, s.y - 9]], '#fff0c5'); }
+    for (const point of level.checkpoints) {
+      const lit = game.checkpoint && point.x <= game.checkpoint.x;
+      rounded(c, point.x - 2, point.y - 70, 4, 70, 2, '#c2b697');
+      line(c, [[point.x, point.y - 67], [point.x + 18, point.y - 67], [point.x + 18, point.y - 58]], '#c2b697');
+      if (lit) ellipse(c, point.x + 18, point.y - 47, 24, 25, '#ffe3a326');
+      rounded(c, point.x + 9, point.y - 59, 18, 25, 5, lit ? '#ffe4a3' : '#7c9692');
+    }
+    for (const s of level.switches) {
+      const lit = s.id < game.puzzle;
+      rounded(c, s.x - 18, s.y - 32, 36, 50, 10, lit ? '#a897c5' : '#655c7e');
+      c.fillStyle = lit ? '#ffe8ad' : '#d0c8df'; c.font = '20px serif'; c.textAlign = 'center'; c.fillText(['☾', '✦', '☀'][s.id], s.x, s.y - 5);
+      c.font = '12px sans-serif'; c.fillText(s.name, s.x, s.y - 43);
+      if (Math.hypot(game.player.x - s.x, game.player.y - s.y) < 95) { rounded(c, s.x - 28, s.y - 80, 56, 24, 8, '#f0e5ca'); c.fillStyle = '#443d54'; c.fillText('E 点亮', s.x, s.y - 64); }
+      c.textAlign = 'left';
+    }
+    if (!game.friendFound) { drawFriend(c, level.friend.x, level.friend.y, level.friend.species, t); c.fillStyle = '#f5e8c7'; c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillText('带我一起走吧', level.friend.x, level.friend.y - 40); c.textAlign = 'left'; }
+    if (!game.badgeFound) { ellipse(c, level.badge.x, level.badge.y, 16, 20, '#ccb17e'); starShape(c, level.badge.x, level.badge.y, 10, '#fff0bf'); }
+    if (level.id === 5) {
+      for (let i = 0; i < game.seeds.size * 5; i++) {
+        const x = 3650 + i * 18, y = level.goal.y + 71;
+        const height = 18 + Math.sin(i * 3) * 9;
+        line(c, [[x, y], [x, y - height]], '#b5cf9e', 2);
+        for (let petal = 0; petal < 5; petal++) {
+          const angle = petal / 5 * TAU;
+          ellipse(c, x + Math.cos(angle) * 5, y - height + Math.sin(angle) * 5, 4, 4, i % 2 ? '#efc7bf' : '#dfe5ac');
         }
+        ellipse(c, x, y - height, 3, 3, '#f7d587');
+      }
     }
-
-    ctx.restore();
+    this.portal(level.goal.x, level.goal.y, level, t);
+    const p = game.player;
+    c.globalAlpha = game.cooldown > 0 ? 0.25 : p.invincible > 0 ? 0.6 + Math.sin(t * 20) * 0.25 : 1;
+    drawHero(c, p.x, p.y, options.outfit || 0, t, Math.abs(p.vx) > 20 && p.grounded, p.facing, p.glide);
+    c.globalAlpha = 1;
+    const follower = WORLDS[options.companion || 0];
+    drawFriend(c, p.x - p.facing * 37 + 14, p.y + 25, follower.species, t, 0.65);
+    if (p.dash > 0) { c.globalAlpha = 0.3; drawHero(c, p.x - p.facing * 25, p.y, options.outfit || 0, t); c.globalAlpha = 1; }
+    if (!options.reduced) for (const bit of game.particles) { c.globalAlpha = Math.max(0, bit.life / 0.7); starShape(c, bit.x, bit.y, 3, bit.color); }
+    c.globalAlpha = 1; c.restore();
+  }
+  portal(x, y, theme, t) {
+    const c = this.ctx;
+    const g = c.createRadialGradient(x + 12, y + 35, 5, x + 12, y + 35, 65); g.addColorStop(0, theme.light + '44'); g.addColorStop(1, theme.light + '00');
+    c.fillStyle = g; c.fillRect(x - 65, y - 40, 160, 150);
+    rounded(c, x - 20, y, 66, 78, [34, 34, 4, 4], '#e8d6aa'); rounded(c, x - 12, y + 8, 50, 70, [26, 26, 0, 0], '#52787a');
+    c.globalAlpha = 0.5; rounded(c, x - 8, y + 12, 42, 66, [23, 23, 0, 0], theme.color); c.globalAlpha = 1;
+    starShape(c, x + 13, y + 37 + Math.sin(t * 2) * 4, 12, theme.light);
+    for (let j = 0; j < 3; j++) ellipse(c, x + 40, y + 12 + j * 20, 6, 3, '#9cb891');
+  }
 }
 
-function drawParticles() {
-    for (let p of particles) {
-        ctx.save();
-        ctx.globalAlpha = p.life / 50;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
-        ctx.restore();
+
+// Source module: adventure-audio.js
+class Soundscape {
+  constructor() { this.context = null; this.enabled = true; this.music = false; this.elapsed = 0; this.note = 0; this.lastStar = 0; }
+  unlock() {
+    try {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) return;
+      if (!this.context) this.context = new Audio();
+      if (this.context.state === 'suspended') this.context.resume().catch(() => {});
+    } catch { this.context = null; }
+  }
+  tone(freq, duration = 0.18, volume = 0.04, delay = 0) {
+    if (!this.context || !this.enabled || this.context.state !== 'running') return;
+    const t = this.context.currentTime + delay;
+    const osc = this.context.createOscillator(); const gain = this.context.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(volume, t + 0.025); gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain); gain.connect(this.context.destination); osc.start(t); osc.stop(t + duration + 0.02);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  }
+  play(type) {
+    const sounds = { jump: [330], dash: [440, 660], spring: [330, 660, 880], checkpoint: [440, 554, 660], friend: [523, 659, 784, 1047], badge: [587, 740, 880], seed: [392, 523, 784], rune: [349, 440, 523], win: [392, 523, 659, 784, 1047], rescue: [294, 262] };
+    if (type === 'star') {
+      const now = performance.now(); if (now - this.lastStar < 65) return;
+      this.lastStar = now; this.tone(784 + (this.note++ % 3) * 98, 0.16, 0.035); return;
     }
-}
-
-function drawHUD() {
-    // Stars
-    ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 20px Arial';
-    ctx.fillText(`★ ${stars}/${totalStars}`, 15, 30);
-
-    // Level name
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'right';
-    ctx.fillText(levels[currentLevel].name, canvas.width - 15, 30);
-    ctx.textAlign = 'left';
-
-    // Deaths
-    ctx.fillStyle = '#ff6666';
-    ctx.font = '14px Arial';
-    ctx.fillText(`💀 ${deathCount}`, 15, 55);
-
-    // Controls hint (fades after 3 seconds)
-    if (frameCount < 180) {
-        ctx.globalAlpha = Math.max(0, 1 - frameCount / 180);
-        ctx.fillStyle = '#fff';
-        ctx.font = '13px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('← → 移动 | 空格 跳跃 | 贴墙+跳 = 墙跳', canvas.width/2, canvas.height - 20);
-        ctx.textAlign = 'left';
-        ctx.globalAlpha = 1;
+    const notes = sounds[type]; if (!notes) return;
+    notes.forEach((n, i) => this.tone(n, type === 'win' ? 0.7 : 0.22, type === 'jump' ? 0.015 : 0.035, i * 0.085));
+  }
+  update(dt, playing) {
+    if (!playing || !this.enabled) return;
+    this.elapsed += dt;
+    if (this.elapsed > 2.8) {
+      this.elapsed = 0;
+      const melody = [262, 330, 392, 330, 294, 349, 440, 392];
+      const f = melody[this.note++ % melody.length];
+      this.tone(f, 2.3, 0.013); this.tone(f * 1.5, 1.8, 0.009, 0.45);
     }
+  }
+  setEnabled(enabled) {
+    this.enabled = enabled;
+    if (!enabled && this.context?.state === 'running') this.context.suspend().catch(() => {});
+    else if (enabled) this.unlock();
+  }
 }
 
-// ============ GAME LOOP ============
-function update() {
-    if (gameState !== 'playing') return;
-    frameCount++;
-    updatePlayer();
-    updatePlatforms();
-    updateHazards();
-    updateStars();
-    updateParticles();
-    checkGoal();
-}
 
-function draw() {
-    if (gameState !== 'playing') return;
-    const level = levels[currentLevel];
-    drawBackground(level);
-    drawDecorations(level);
-    drawPlatforms();
-    drawHazards();
-    drawStars();
-    drawGoal();
-    drawPlayer();
-    drawParticles();
-    drawHUD();
+// Source module: adventure-main.js
+const icon = (name, extra = '') => `<i aria-hidden="true" class="ri-${name} ${extra}"></i>`;
+const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:opacity-40 disabled:hover:translate-y-0';
+const softButton = `${buttonClass} border border-white/10 bg-white/5 text-stone-200 hover:bg-white/10`;
+const goldButton = `${buttonClass} bg-[#ecce91] text-[#233b3d] font-bold hover:bg-[#ffe1a7] shadow-lg shadow-black/10`;
+const panelClass = 'rounded-2xl border border-white/10 bg-[#183139]';
+const loaded = (() => { try { return readSave(window.localStorage); } catch { return { save: blankSave(), available: false }; } })();
+let save = loaded.save;
+let storageAvailable = loaded.available;
+let dirty = false;
+let saveElapsed = 0;
+let toastTimer = 0;
+let focusBeforeDialog = null;
+let resumeAfterDialog = false;
+let hudTick = 0;
+let collectionTab = 'friends';
+const sound = new Soundscape();
+sound.enabled = save.sound;
+const game = new Adventure(onGameEvent);
+const app = document.getElementById('app');
+app.innerHTML = `
+<div class="min-h-screen bg-[#101f28] text-[#edeadd] selection:bg-[#b5d9c2] selection:text-[#1d3a38]">
+  <header class="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-4 py-5 sm:px-8 lg:px-12">
+    <button data-action="home" class="flex items-center gap-3 text-left" aria-label="返回星光漫游首页">
+      <span class="flex h-11 w-11 items-center justify-center rounded-full border border-[#a4c8b1]/35 bg-[#203b3e] text-2xl text-[#ecce91]">${icon('compass-3-line')}</span>
+      <span><span class="block font-serif text-xl tracking-widest">星光漫游</span><span class="block pt-1 text-[9px] tracking-[0.24em] text-[#91a9aa]">失落的天空花园</span></span>
+    </button>
+    <nav class="flex items-center gap-1 sm:gap-3" aria-label="游戏导航">
+      <button data-action="map" class="${softButton} border-transparent bg-transparent max-sm:px-2">${icon('map-2-line')}<span class="hidden sm:inline">旅行地图</span></button>
+      <button data-action="collection" class="${softButton} border-transparent bg-transparent max-sm:px-2">${icon('book-open-line')}<span class="hidden sm:inline">旅行手帐</span></button>
+      <span class="mx-1 hidden h-5 w-px bg-white/10 sm:block"></span>
+      <button data-action="sound" id="sound-button" class="${softButton} border-transparent bg-transparent max-sm:px-2" aria-label="切换声音"></button>
+      <button data-action="settings" class="${softButton} border-transparent bg-transparent max-sm:px-2" aria-label="游戏设置">${icon('settings-4-line', 'text-lg')}</button>
+    </nav>
+  </header>
+  <main class="mx-auto max-w-[1500px] px-4 pb-6 sm:px-8 lg:px-12">
+    <section id="stage" class="relative isolate overflow-hidden rounded-[24px] border border-[#8da99d]/20 bg-[#21434a] shadow-2xl shadow-black/15">
+      <canvas id="game-canvas" tabindex="0" class="block aspect-[11/6] max-h-[72vh] min-h-[260px] w-full touch-none object-contain outline-none" aria-label="星光漫游游戏画面。方向键或 A D 移动，空格跳跃，X 冲刺，E 互动。"></canvas>
+      <div id="home-overlay" class="pointer-events-none absolute inset-0 flex items-center bg-gradient-to-r from-[#183239] via-[#183239]/80 to-transparent sm:via-[#183239]/40">
+        <div class="pointer-events-auto w-full px-6 pb-3 sm:w-[56%] sm:px-10 lg:px-14">
+          <div class="mb-4 flex items-center gap-2 text-[11px] tracking-[0.2em] text-[#d7dfb8] sm:mb-7"><span class="h-px w-6 bg-[#c8d3a1]"></span> 一场关于勇气与好奇心的旅行</div>
+          <h1 class="font-serif text-4xl font-medium leading-[1.2] tracking-wider text-[#f6eed9] sm:text-5xl lg:text-[62px]">循着星光，<br><span class="text-[#d9dfa9]">去遇见奇迹。</span></h1>
+          <p class="mt-5 hidden max-w-sm text-sm leading-7 text-[#b8cbc4] sm:block">穿过森林，跃入云海，与新朋友并肩前行。<br>不必急着抵达，每一次发现都值得珍藏。</p>
+          <div class="mt-6 flex flex-wrap gap-3 sm:mt-8">
+            <button id="start-button" data-action="start" class="${goldButton} sm:px-6">开启我的旅程 ${icon('arrow-right-line')}</button>
+            <button data-action="howto" class="${softButton}">${icon('gamepad-line')} 怎么玩</button>
+          </div>
+          <div class="mt-5 flex items-center gap-4 text-[11px] text-[#a5beb3] sm:mt-7"><span>${icon('leaf-line')} 没有倒计时</span><span>${icon('sparkling-line')} 自由探索</span><span class="hidden sm:inline">${icon('heart-3-line')} 每一步都算数</span></div>
+        </div>
+        <div class="absolute bottom-7 right-8 hidden rounded-full border border-white/15 bg-[#254647]/70 px-4 py-2 text-[11px] tracking-wider text-[#e5e8d6] backdrop-blur sm:block">${icon('sun-line', 'mr-2 text-[#ecd196]')} 晨光森林 · 旅程的第一站</div>
+      </div>
+      <div id="play-overlay" class="pointer-events-none absolute inset-0 hidden">
+        <div class="flex items-start justify-between gap-2 p-3 sm:p-5">
+          <div class="rounded-2xl border border-white/15 bg-[#122831]/85 px-4 py-3 backdrop-blur">
+            <p id="level-label" class="text-[10px] tracking-widest text-[#a6beb3]"></p>
+            <p id="level-title" class="mt-1 text-sm font-semibold sm:text-lg"></p>
+            <div class="mt-2 h-1 w-32 overflow-hidden rounded-full bg-white/10 sm:w-48"><div id="progress-bar" class="h-full w-0 bg-[#c9dba8] transition-[width]"></div></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="rounded-xl border border-white/10 bg-[#122831]/85 px-3 py-3 text-sm text-[#efd392] backdrop-blur">${icon('star-line')} <span id="star-count">0</span><span id="star-total" class="text-[#97aaa4]"></span></div>
+            <button data-action="pause" class="${softButton} pointer-events-auto bg-[#122831]/85 backdrop-blur" aria-label="暂停游戏">${icon('pause-line', 'text-lg')}</button>
+          </div>
+        </div>
+        <div class="absolute bottom-4 left-4 hidden rounded-xl bg-[#142d32]/80 px-3 py-2 text-xs text-[#c6d6cc] backdrop-blur sm:block"><span id="mission-label"></span></div>
+        <div id="touch-controls" class="pointer-events-auto absolute inset-x-0 bottom-3 flex items-end justify-between px-3 sm:bottom-4 sm:px-5">
+          <div class="flex gap-2"><button data-key="left" class="h-14 w-14 touch-none select-none rounded-2xl border border-white/30 bg-[#203e46]/65 text-2xl text-white active:bg-[#c1d9b8]/40" aria-label="向左">${icon('arrow-left-line')}</button><button data-key="right" class="h-14 w-14 touch-none select-none rounded-2xl border border-white/30 bg-[#203e46]/65 text-2xl text-white active:bg-[#c1d9b8]/40" aria-label="向右">${icon('arrow-right-line')}</button></div>
+          <div class="flex items-end gap-2"><button id="touch-interact" data-key="interact" class="h-12 w-12 touch-none select-none rounded-full border border-white/30 bg-[#a997cb]/50 text-xs" aria-label="互动">互动</button><button id="touch-dash" data-key="dash" class="h-12 w-12 touch-none select-none rounded-full border border-white/30 bg-[#8cb7ce]/50 text-xs" aria-label="冲刺">冲刺</button><button data-key="jump" class="h-16 w-16 touch-none select-none rounded-full border border-[#f1dfac]/60 bg-[#ddc28c]/80 text-sm font-bold text-[#21343b]" aria-label="跳跃或长按滑翔">跳跃</button></div>
+        </div>
+      </div>
+    </section>
+    <section id="play-info" class="mt-4 hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#172c33] px-5 py-4">
+      <p id="play-tip" class="max-w-3xl text-xs leading-6 text-[#b1c6bb]"></p>
+      <div class="flex gap-2"><button data-action="hint" class="${softButton} py-2">${icon('lightbulb-line')} 小提示</button><button data-action="howto" class="${softButton} py-2">${icon('keyboard-line')} 操作</button><button data-action="fullscreen" class="${softButton} py-2" aria-label="切换全屏">${icon('fullscreen-line')}</button></div>
+    </section>
+    <div id="home-sections">
+      <section class="my-6 grid grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-[#172b32] py-5">
+        <div class="flex items-center justify-center gap-3 sm:gap-4"><span class="hidden text-2xl text-[#b8d0b1] sm:inline">${icon('route-line')}</span><div><span id="stat-worlds" class="font-serif text-xl text-[#e7d5aa]">0 / 6</span><p class="mt-1 text-[10px] tracking-wider text-[#94aca6]">点亮的世界</p></div></div>
+        <div class="flex items-center justify-center gap-3 sm:gap-4"><span class="hidden text-2xl text-[#b8d0b1] sm:inline">${icon('star-line')}</span><div><span id="stat-stars" class="font-serif text-xl text-[#e7d5aa]">0</span><p class="mt-1 text-[10px] tracking-wider text-[#94aca6]">珍藏的星光</p></div></div>
+        <div class="flex items-center justify-center gap-3 sm:gap-4"><span class="hidden text-2xl text-[#b8d0b1] sm:inline">${icon('hearts-line')}</span><div><span id="stat-friends" class="font-serif text-xl text-[#e7d5aa]">0 / 6</span><p class="mt-1 text-[10px] tracking-wider text-[#94aca6]">遇见的新朋友</p></div></div>
+      </section>
+      <section id="world-map" class="scroll-mt-6">
+        <div class="mb-5 flex items-end justify-between gap-3"><div><p class="mb-2 text-[10px] tracking-[0.24em] text-[#8fa9a0]">把世界的碎片，拼成自己的故事</p><h2 class="font-serif text-2xl tracking-wider">你的星光地图</h2></div><button data-action="collection" class="pb-1 text-xs text-[#ced9b6]">翻开旅行手帐 ${icon('arrow-right-up-line')}</button></div>
+        <div id="map-grid" class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6"></div>
+      </section>
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs text-[#91a9a3]"><p>${icon('moon-clear-line', 'mr-2 text-[#d3c59a]')} 今天也不必做得完美，享受旅程就好。</p><p id="save-status">${icon('checkbox-circle-line')} 旅程自动保存在此浏览器</p></div>
+    </div>
+  </main>
+  <footer class="pb-6 pt-2 text-center text-[11px] text-[#7e9894]"><p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank" rel="noopener">With</a> 通过自然语言生成</p></footer>
+  <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-6 left-1/2 z-50 hidden w-max max-w-[90vw] -translate-x-1/2 rounded-2xl border border-[#e6dba6]/30 bg-[#243d40]/95 px-5 py-3 text-center text-sm leading-6 text-[#f0e6c4] shadow-2xl backdrop-blur"></div>
+  <dialog id="modal" class="m-auto max-h-[88vh] w-[92vw] max-w-3xl overflow-y-auto rounded-3xl border border-[#769c90]/30 bg-[#172e37] p-0 text-[#f0eada] shadow-2xl backdrop:bg-[#07121c]/80 backdrop:backdrop-blur-sm">
+    <div class="flex items-center justify-between border-b border-white/10 px-6 py-5"><h2 id="modal-title" class="font-serif text-xl tracking-wider"></h2><button data-action="close" class="rounded-lg p-2 text-[#a7bdb4] hover:bg-white/10" aria-label="关闭">${icon('close-line', 'text-xl')}</button></div>
+    <div id="modal-body" class="p-6"></div>
+  </dialog>
+</div>`;
+const canvas = document.getElementById('game-canvas');
+const painter = new Painter(canvas);
+const modal = document.getElementById('modal');
+const toastBox = document.getElementById('toast');
+const $ = id => document.getElementById(id);
+const pointerKeys = new Map();
+const keyMap = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', ArrowUp: 'jump', KeyW: 'jump', KeyX: 'dash', ShiftLeft: 'dash', ShiftRight: 'dash', KeyE: 'interact' };
+const heldCodes = new Set();
+function notify(text) {
+  if (!text) return;
+  toastBox.textContent = text; toastBox.classList.remove('hidden'); window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastBox.classList.add('hidden'), 4400);
 }
-
-function gameLoop() {
-    if (gameState === 'playing') {
-        update();
-        draw();
-    }
-    requestAnimationFrame(gameLoop);
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); storageAvailable = true; }
+  catch { storageAvailable = false; }
+  dirty = false;
+  $('save-status').textContent = storageAvailable ? '旅程自动保存在此浏览器' : '当前无法保存，关闭页面后进度可能丢失';
 }
-
-// ============ UI FUNCTIONS ============
-function hideAllScreens() {
-    document.querySelectorAll('.menu-screen').forEach(s => s.classList.remove('visible'));
+function capture() {
+  if (['playing', 'paused'].includes(game.state)) { save.active = game.snapshot(); dirty = true; }
 }
-
-function showScreen(id) {
-    hideAllScreens();
-    document.getElementById(id).classList.add('visible');
-    document.getElementById('ui-overlay').classList.add('active');
+function resetInput() { game.clearInput(); heldCodes.clear(); pointerKeys.clear(); }
+function openModal(title, html) {
+  if (!modal.open) {
+    focusBeforeDialog = document.activeElement;
+    resumeAfterDialog = game.state === 'playing';
+    if (resumeAfterDialog) { capture(); game.state = 'paused'; }
+    resetInput();
+  }
+  $('modal-title').textContent = title; $('modal-body').innerHTML = html;
+  if (!modal.open) modal.showModal();
 }
-
-function hideOverlay() {
-    hideAllScreens();
-    document.getElementById('ui-overlay').classList.remove('active');
+function closeModal() {
+  modal.close();
+  if (resumeAfterDialog && game.state === 'paused') game.state = 'playing';
+  resumeAfterDialog = false;
+  resetInput();
+  if (game.state === 'playing') canvas.focus({ preventScroll: true });
+  else if (focusBeforeDialog?.isConnected) focusBeforeDialog.focus({ preventScroll: true });
 }
-
-function showStart() {
-    showScreen('start-screen');
+function syncSound() {
+  $('sound-button').innerHTML = icon(save.sound ? 'volume-up-line' : 'volume-mute-line', 'text-lg');
+  $('sound-button').setAttribute('aria-label', save.sound ? '关闭声音' : '开启声音');
+  $('sound-button').setAttribute('aria-pressed', String(save.sound));
 }
-
-function showLevels() {
-    const container = document.getElementById('level-buttons');
-    container.innerHTML = '';
-    for (let i = 0; i < levels.length; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-level' + (i >= unlockedLevels ? ' locked' : '');
-        btn.textContent = `${i+1}. ${levels[i].name}`;
-        if (i < unlockedLevels) {
-            btn.onclick = () => { currentLevel = i; startLevel(); };
-        }
-        container.appendChild(btn);
-    }
-    showScreen('level-screen');
+function worldCards(compact = false) {
+  return WORLDS.map((w, i) => {
+    const r = save.records[i] || {}, locked = i >= save.unlocked;
+    const active = i === save.selected;
+    return `<button data-action="level" data-id="${i}" ${locked ? 'disabled' : ''} class="group relative overflow-hidden rounded-2xl border ${active ? 'border-[#bfcea0]/55 bg-[#27403f]' : 'border-white/10 bg-[#192e36]'} p-4 text-left transition hover:-translate-y-1 hover:border-[#bfd3ac]/50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+      <div class="relative mb-4 h-24 overflow-hidden rounded-xl ${locked ? 'opacity-50' : ''}"><canvas data-world-art="${i}" class="h-full w-full" aria-hidden="true"></canvas><span class="absolute left-2 top-2 text-[9px] tracking-widest text-white/60">CHAPTER 0${i + 1}</span><span class="absolute bottom-2 right-2 text-[#efdeb2]">${icon(locked ? 'lock-2-line' : r.complete ? 'checkbox-circle-line' : 'arrow-right-up-line')}</span></div>
+      <p class="text-sm font-semibold ${locked ? 'text-[#8ca3a1]' : 'text-[#e8e9d8]'}">${w.name}</p><p class="mt-2 min-h-8 text-[10px] leading-4 text-[#93aea5]">${w.tag}</p>
+      <div class="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-[10px] text-[#bbccaf]"><span>${locked ? '完成前一站解锁' : r.complete ? `${r.stars} 颗星光` : active ? '从这里出发' : '等待你的脚步'}</span><span>${r.badge ? icon('medal-line') : locked ? '' : icon('sparkling-line')}</span></div></button>`;
+  }).join('');
 }
-
-function startGame() {
-    showLevels();
+function paintThumbnails() {
+  document.querySelectorAll('[data-world-art]').forEach(el => {
+    const theme = WORLDS[Number(el.dataset.worldArt)];
+    el.width = 360; el.height = 190;
+    const c = el.getContext('2d'); const g = c.createLinearGradient(0, 0, 0, 190); g.addColorStop(0, theme.sky[0]); g.addColorStop(1, theme.sky[1]); c.fillStyle = g; c.fillRect(0, 0, 360, 190);
+    c.fillStyle = theme.light; c.beginPath(); c.arc(283, 49, 16, 0, Math.PI * 2); c.fill();
+    const miniature = Object.create(Painter.prototype); miniature.ctx = c;
+    if ([0, 1, 5].includes(theme.id)) { miniature.tree(100, 159, 0.75, theme.land); miniature.tree(220, 156, 0.45, theme.color); }
+    if (theme.id === 2) { c.fillStyle = '#e2eeeeaa'; for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(45 + i * 90, 100 + i % 2 * 30, 42, 12, 0, 0, Math.PI * 2); c.fill(); } }
+    if (theme.id === 3) for (let i = 0; i < 5; i++) { c.fillStyle = '#d1bdac55'; c.beginPath(); c.roundRect(35 + i * 65, 80, 25, 90, 10); c.fill(); }
+    if (theme.id === 4) for (let i = 0; i < 5; i++) { c.fillStyle = '#acdacf88'; c.beginPath(); c.moveTo(i * 75 + 20, 165); c.lineTo(i * 75 + 40, 64 + i % 2 * 30); c.lineTo(i * 75 + 58, 165); c.fill(); }
+    c.fillStyle = theme.land; c.beginPath(); c.roundRect(0, 165, 360, 50, 14); c.fill();
+    c.fillStyle = theme.color; c.fillRect(0, 164, 360, 5);
+    for (let i = 0; i < 9; i++) { c.fillStyle = '#fff0bf88'; c.fillRect(22 + i * 37, 35 + i % 3 * 20, 2, 2); }
+  });
 }
-
-function startLevel() {
-    loadLevel(currentLevel);
-    deathCount = 0;
-    frameCount = 0;
-    gameState = 'playing';
-    hideOverlay();
+function updateHome() {
+  const records = Object.values(save.records);
+  $('map-grid').innerHTML = worldCards(); paintThumbnails();
+  $('stat-worlds').textContent = `${records.filter(r => r.complete).length} / 6`;
+  $('stat-stars').textContent = records.reduce((n, r) => n + r.stars, 0);
+  $('stat-friends').textContent = `${records.filter(r => r.friend).length} / 6`;
+  $('start-button').innerHTML = `${save.active ? '继续上次的旅程' : save.unlocked > 1 ? '继续我的旅程' : '开启我的旅程'} ${icon('arrow-right-line')}`;
+  $('save-status').textContent = storageAvailable ? '旅程自动保存在此浏览器' : '当前无法保存，关闭页面后进度可能丢失';
 }
-
-function retryLevel() {
-    loadLevel(currentLevel);
-    frameCount = 0;
-    gameState = 'playing';
-    hideOverlay();
+function showHome() {
+  capture(); persist(); resumeAfterDialog = false; if (modal.open) modal.close();
+  game.preview(0); resetInput();
+  $('home-overlay').classList.remove('hidden'); $('home-sections').classList.remove('hidden');
+  $('play-overlay').classList.add('hidden'); $('play-info').classList.add('hidden'); $('play-info').classList.remove('flex');
+  canvas.classList.remove('max-sm:min-h-[420px]');
+  updateHome();
 }
-
-function nextLevel() {
-    if (currentLevel < levels.length - 1) {
-        currentLevel++;
-        startLevel();
-    } else {
-        showLevels();
-    }
+function beginLevel(index, resume = false) {
+  if (!Number.isInteger(index) || index < 0 || index >= save.unlocked) return;
+  sound.unlock(); resumeAfterDialog = false; if (modal.open) modal.close();
+  save.selected = index;
+  const active = resume && save.active?.level === index ? save.active : null;
+  game.load(index, save.mode, active);
+  canvas.classList.add('max-sm:min-h-[420px]');
+  $('home-overlay').classList.add('hidden'); $('home-sections').classList.add('hidden');
+  $('play-overlay').classList.remove('hidden'); $('play-info').classList.remove('hidden'); $('play-info').classList.add('flex');
+  $('level-label').textContent = `第 ${index + 1} 站 / 6 · ${MODES[save.mode].name}`;
+  $('level-title').textContent = WORLDS[index].name;
+  $('play-tip').textContent = WORLDS[index].tip;
+  $('touch-dash').classList.toggle('hidden', index < 2); $('touch-interact').classList.toggle('hidden', index !== 3);
+  capture(); persist(); updateHud(); canvas.focus({ preventScroll: true });
+  $('stage').scrollIntoView({ behavior: save.reduced ? 'instant' : 'smooth', block: 'start' });
+  if (!active) openModal(`第 ${index + 1} 站 · ${WORLDS[index].name}`, `<div class="mb-5 text-xs tracking-wider text-[#c9d3a2]">${WORLDS[index].subtitle}</div><p class="text-base leading-8 text-[#d3ddd0]">${WORLDS[index].story}</p><div class="my-6 rounded-2xl border border-[#bfcea0]/20 bg-white/5 p-4 text-sm leading-7 text-[#b6ccb9]">${icon('lightbulb-line', 'mr-2 text-[#e8ce94]')}${WORLDS[index].tip}</div><button data-action="close" class="${goldButton} w-full">准备好了，出发 ${icon('arrow-right-line')}</button>`);
 }
+function updateHud() {
+  $('star-count').textContent = game.collected.size;
+  $('star-total').textContent = ` / ${game.level.stars.length}`;
+  $('progress-bar').style.width = `${Math.min(100, game.player.x / game.level.goal.x * 100)}%`;
+  $('mission-label').textContent = game.level.id === 5 ? `星光种子 ${game.seeds.size}/3 · 带回星门` : game.level.id === 3 ? `符文 ${game.puzzle}/3 · 月亮 → 星星 → 太阳` : `${game.friendFound ? '已找到伙伴' : '寻找新朋友'} · ${game.badgeFound ? '已找到秘密徽章' : '高处藏着秘密徽章'}`;
+}
+function recordProgress(complete = false) {
+  const i = game.level.id, previous = save.records[i] || {};
+  save.records[i] = { stars: Math.max(previous.stars || 0, game.collected.size), friend: !!previous.friend || game.friendFound, badge: !!previous.badge || game.badgeFound, complete: !!previous.complete || complete, time: complete ? (!previous.time || game.time < previous.time ? game.time : previous.time) : previous.time || 0 };
+}
+function onGameEvent(event) {
+  sound.play(event.type);
+  if (event.text) notify(event.text);
+  if (['star', 'seed', 'friend', 'badge', 'checkpoint', 'rune'].includes(event.type)) { recordProgress(); capture(); }
+  if (event.type === 'checkpoint') persist();
+  if (event.type === 'win') {
+    recordProgress(true); save.unlocked = Math.min(6, Math.max(save.unlocked, game.level.id + 2)); save.selected = Math.min(5, game.level.id + 1); save.active = null; persist();
+    const final = game.level.id === 5;
+    openModal(final ? '天空花园，为你盛开' : '又点亮了一个小世界', `<p class="mb-2 text-center text-xs tracking-[0.2em] text-[#bed1b2]">${final ? '你让所有的旅途，有了相遇的意义' : '把这一刻，夹进你的旅行手帐'}</p><p class="my-5 text-center font-serif text-2xl leading-10 text-[#efdbad]">${game.level.note}</p><div class="my-6 grid grid-cols-3 gap-3">${[[`${game.collected.size}/${game.level.stars.length}`, '找到的星光'], [game.friendFound ? game.level.friend.name : '等待下次相遇', '旅途伙伴'], [game.badgeFound ? '已收藏' : '还有秘密等你', '旅行徽章']].map(([v, l]) => `<div class="rounded-2xl bg-white/5 p-4 text-center"><p class="text-sm text-[#ead397]">${v}</p><p class="mt-2 text-[10px] text-[#9db8ae]">${l}</p></div>`).join('')}</div><p class="mb-6 text-center text-xs text-[#b9cfae]">${final ? '可以回到任意世界，寻找错过的朋友与星光。' : `旅行衣橱已解锁「${OUTFITS[Math.min(5, game.level.id + 1)].name}」。`}</p><div class="flex flex-wrap justify-center gap-3"><button data-action="${final ? 'collection' : 'next'}" class="${goldButton}">${final ? '翻开旅行手帐' : '去下一站'} ${icon('arrow-right-line')}</button><button data-action="retry" class="${softButton}">再探索一次</button><button data-action="home" class="${softButton}">返回地图</button></div>`);
+  }
+}
+function pauseMenu() {
+  if (!['playing', 'paused'].includes(game.state)) return;
+  openModal('在这里，歇一歇', `<p class="mb-5 text-sm leading-7 text-[#b9cdc2]">风景不会走远，伙伴也会等你。当前收集和最近的灯笼检查点都会保留。</p><div class="grid gap-3 sm:grid-cols-2"><button data-action="close" class="${goldButton}">${icon('play-line')} 继续旅行</button><button data-action="assist" class="${softButton}">${icon('magic-line')} 请星光带我到下一盏灯</button><button data-action="retry-confirm" class="${softButton}">${icon('restart-line')} 重新探索这一站</button><button data-action="home" class="${softButton}">${icon('map-2-line')} 保存并返回地图</button></div><p class="mt-5 text-xs text-[#829f97]">引路不会自动收集物品，也不会跳过符文谜题。</p>`);
+}
+function howTo() {
+  openModal('一张小小的冒险指南', `<div class="grid gap-3 sm:grid-cols-2">${[['方向键 / A D', '向左或向右移动'], ['空格 / ↑ / W', '跳跃；空中再次按下可连跳'], ['X / Shift · 第 3 站起', '朝面向的方向冲刺，落地恢复'], ['长按跳跃 · 第 3 站起', '下降时展开滑翔伞，慢慢落下'], ['贴墙 + 跳跃', '从墙面蹬出去，寻找新的路线'], ['E / 互动按钮', '靠近图书馆的符文后点亮'], ['Esc / P', '暂停，随时休息或查看地图'], ['触屏双指操作', '左侧移动，右侧跳跃或冲刺']].map(([k, v]) => `<div class="rounded-xl bg-white/5 p-4"><p class="mb-2 text-sm text-[#ecd49b]">${k}</p><p class="text-xs leading-6 text-[#b8cbbf]">${v}</p></div>`).join('')}</div><p class="mt-5 text-sm leading-7 text-[#b3c5ba]">轻松探索提供三段跳、较慢的移动障碍和更宽松的收集范围；标准冒险提供二段跳。点亮灯笼后即可从那里重新出发，已收集的星光不会丢失。</p><button data-action="close" class="${goldButton} mt-5 w-full">知道啦</button>`);
+}
+function settings() {
+  openModal('按你的节奏旅行', `<div class="space-y-6"><div><p class="mb-3 text-sm text-[#d5dfc2]">下一次出发的难度</p><div class="grid gap-3 sm:grid-cols-2">${Object.entries(MODES).map(([id, mode]) => `<button data-action="mode" data-mode="${id}" aria-pressed="${save.mode === id}" class="rounded-xl border ${save.mode === id ? 'border-[#d5d89f] bg-[#a2bf9c]/10' : 'border-white/10'} p-4 text-left"><span class="text-sm text-[#efdab0]">${mode.name}</span><span class="mt-2 block text-xs leading-6 text-[#aabfb1]">${id === 'explore' ? '三段跳 · 更容易收集 · 机关更宽容' : '二段跳 · 标准机关 · 适度挑战'}</span></button>`).join('')}</div><p class="mt-2 text-xs text-[#849f97]">难度在下一次开始或继续关卡时生效，不会重置收藏。</p></div><button data-action="setting-sound" class="flex w-full items-center justify-between rounded-xl bg-white/5 p-4 text-sm"><span>轻柔音乐与音效</span><span class="text-[#e9d294]">${save.sound ? '已开启' : '已关闭'}</span></button><button data-action="reduced" class="flex w-full items-center justify-between rounded-xl bg-white/5 p-4 text-sm"><span>减少环境动画与粒子</span><span class="text-[#e9d294]">${save.reduced ? '已开启' : '已关闭'}</span></button><div class="border-t border-white/10 pt-4"><p class="mb-3 text-xs leading-6 text-[#94aea4]">存档仅保存在此浏览器，不上传个人信息。清除浏览器数据会清除进度。</p><button data-action="reset-confirm" class="text-xs text-[#d2a3a3]">重新开始整段旅程</button></div></div>`);
+}
+function collection(tab = collectionTab) {
+  collectionTab = tab;
+  const friends = tab === 'friends';
+  const items = friends ? WORLDS : OUTFITS;
+  openModal('我的旅行手帐', `<div class="mb-5 flex gap-3"><button data-action="friends" class="${friends ? goldButton : softButton}">伙伴与纪念</button><button data-action="outfits" class="${friends ? softButton : goldButton}">旅行衣橱</button></div><div class="grid grid-cols-2 gap-3 lg:grid-cols-3">${items.map((item, i) => {
+    const r = save.records[i] || {}, found = friends ? !!r.friend : save.unlocked > item.need;
+    const selected = friends ? save.companion === i : save.outfit === i;
+    return `<div class="rounded-2xl border ${selected && found ? 'border-[#c9d8a4]/60' : 'border-white/10'} bg-white/5 p-4 text-center"><canvas width="220" height="140" data-portrait="${i}" data-kind="${tab}" class="mx-auto h-24 w-full ${found ? '' : 'opacity-25'}" aria-hidden="true"></canvas><p class="text-sm ${found ? 'text-[#e9d8ae]' : 'text-[#92aaa2]'}">${friends ? item.friend : item.name}</p><p class="mt-2 text-[10px] leading-5 text-[#a4b8aa]">${friends ? `${item.name} · ${r.badge ? '秘密徽章已收藏' : '秘密徽章待发现'}` : i === 0 ? '旅行开始时拥有' : `完成第 ${i} 站解锁`}</p><button data-action="${friends ? 'companion' : 'outfit'}" data-id="${i}" ${!found ? 'disabled' : ''} class="mt-3 text-xs text-[#d9dba8] disabled:text-[#758f88]">${!found ? (friends ? '在高处找到我' : '尚未解锁') : selected ? '正在同行' : friends ? '一起出发' : '换上这套'}</button></div>`;
+  }).join('')}</div><p class="mt-5 text-xs leading-6 text-[#8eaaa0]">${friends ? '米露会在旅途开始时陪伴你。找到关卡高处的伙伴后，就能邀请它们同行。收藏没有期限，不用急着集齐。' : '所有装扮通过冒险解锁，没有购买，也没有随机抽取。'}</p>${game.state === 'won' ? `<button data-action="home" class="${goldButton} mt-5 w-full">回到星光地图</button>` : ''}`);
+  document.querySelectorAll('[data-portrait]').forEach(el => {
+    const c = el.getContext('2d'), i = Number(el.dataset.portrait);
+    if (friends) drawFriend(c, 110, 82, WORLDS[i].species, 0, 2);
+    else drawHero(c, 96, 46, i, 0, false, 1, false, 1.5);
+  });
+}
+const actions = {
+  start: () => beginLevel(save.active?.level ?? save.selected, true),
+  home: showHome,
+  map: () => {
+    if (game.state === 'home') $('world-map').scrollIntoView({ behavior: save.reduced ? 'instant' : 'smooth' });
+    else { openModal('选择下一段风景', `<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">${worldCards(true)}</div><p class="mt-5 text-xs text-[#9bb4a9]">选择关卡会从该关起点出发。手帐收藏不会丢失。</p>`); paintThumbnails(); }
+  },
+  level: b => beginLevel(Number(b.dataset.id)),
+  close: closeModal, pause: pauseMenu, howto: howTo, settings,
+  hint: () => notify(game.level.tip),
+  next: () => beginLevel(Math.min(5, game.level.id + 1)),
+  retry: () => beginLevel(game.level.id),
+  'retry-confirm': () => openModal('重新出发？', `<p class="mb-6 text-sm leading-7 text-[#c7d8cb]">会从这一站的起点重新开始，本次灯笼位置会重置。已经记入旅行手帐的收藏不会丢失。</p><div class="flex gap-3"><button data-action="retry" class="${goldButton}">重新出发</button><button data-action="close" class="${softButton}">继续当前旅程</button></div>`),
+  assist: () => { closeModal(); game.assist(); capture(); persist(); },
+  sound: () => { save.sound = !save.sound; sound.setEnabled(save.sound); syncSound(); persist(); },
+  'setting-sound': () => { actions.sound(); settings(); },
+  reduced: () => { save.reduced = !save.reduced; persist(); settings(); },
+  mode: b => { const mode = b.dataset.mode; if (Object.hasOwn(MODES, mode)) { save.mode = mode; persist(); settings(); } },
+  collection: () => collection(), friends: () => collection('friends'), outfits: () => collection('outfits'),
+  companion: b => { const i = Number(b.dataset.id); if (save.records[i]?.friend) { save.companion = i; persist(); collection('friends'); } },
+  outfit: b => { const i = Number(b.dataset.id); if (OUTFITS[i] && save.unlocked > OUTFITS[i].need) { save.outfit = i; persist(); collection('outfits'); } },
+  fullscreen: async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else if ($('stage').requestFullscreen) await $('stage').requestFullscreen(); else notify('当前浏览器不支持全屏，横屏游玩会更舒适。'); } catch { notify('当前预览不允许全屏，横屏游玩也很舒适。'); } },
+  'reset-confirm': () => openModal('清空这本旅行手帐？', `<p class="mb-6 text-sm leading-7 text-[#d4c5bc]">这会删除此浏览器中的所有关卡进度、伙伴和收藏，无法撤销。确定要从第一站重新开始吗？</p><div class="flex gap-3"><button data-action="reset" class="${softButton} text-[#e0abab]">确认清空</button><button data-action="close" class="${goldButton}">保留我的旅程</button></div>`),
+  reset: () => { save = blankSave(); game.state = 'home'; persist(); sound.setEnabled(true); syncSound(); showHome(); notify('新的旅行手帐已经准备好了。'); }
+};
+document.addEventListener('click', e => {
+  const button = e.target.closest('[data-action]');
+  if (!button || button.disabled) return;
+  if (save.sound) sound.unlock();
+  const action = actions[button.dataset.action]; if (action) action(button);
+});
+modal.addEventListener('cancel', e => { e.preventDefault(); closeModal(); });
+modal.addEventListener('click', e => { if (e.target === modal) { const r = modal.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeModal(); } });
+window.addEventListener('keydown', e => {
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (modal.open) { if (e.code === 'KeyP') { e.preventDefault(); closeModal(); } return; }
+    if (game.state === 'playing') { e.preventDefault(); pauseMenu(); } return;
+  }
+  if (modal.open || game.state !== 'playing' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  const key = keyMap[e.code];
+  if (key) { e.preventDefault(); if (!heldCodes.has(e.code)) { heldCodes.add(e.code); game.press(key); } }
+});
+window.addEventListener('keyup', e => {
+  heldCodes.delete(e.code);
+  const key = keyMap[e.code];
+  if (key && ![...heldCodes].some(code => keyMap[code] === key) && ![...pointerKeys.values()].includes(key)) game.release(key);
+});
+document.querySelectorAll('[data-key]').forEach(button => {
+  button.addEventListener('pointerdown', e => {
+    if (game.state !== 'playing' || modal.open) return;
+    e.preventDefault(); button.setPointerCapture(e.pointerId); pointerKeys.set(e.pointerId, button.dataset.key); game.press(button.dataset.key);
+  });
+  const up = e => { const key = pointerKeys.get(e.pointerId); pointerKeys.delete(e.pointerId); if (key && ![...pointerKeys.values()].includes(key) && ![...heldCodes].some(code => keyMap[code] === key)) game.release(key); };
+  button.addEventListener('pointerup', up); button.addEventListener('pointercancel', up); button.addEventListener('lostpointercapture', up);
+  button.addEventListener('contextmenu', e => e.preventDefault());
+});
+function onFocusLost() { resetInput(); if (game.state === 'playing') pauseMenu(); capture(); if (dirty) persist(); }
+window.addEventListener('blur', onFocusLost);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { onFocusLost(); sound.context?.suspend().catch(() => {}); } else if (save.sound) sound.unlock(); });
+window.addEventListener('pagehide', () => { capture(); persist(); });
+const coarse = window.matchMedia('(pointer: coarse)');
+const narrowScreen = window.matchMedia('(max-width: 900px)');
+function updateTouch() {
+  const show = coarse.matches || navigator.maxTouchPoints > 0 || narrowScreen.matches;
+  $('touch-controls').classList.toggle('hidden', !show);
+}
+coarse.addEventListener?.('change', updateTouch);
+narrowScreen.addEventListener?.('change', updateTouch);
+window.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') $('touch-controls').classList.remove('hidden'); }, { passive: true });
+updateTouch();
+let lastFrame = 0, accumulator = 0;
+function frame(now) {
+  const delta = lastFrame ? Math.min(0.08, (now - lastFrame) / 1000) : 0;
+  lastFrame = now;
+  if (!document.hidden) {
+    accumulator += delta;
+    while (accumulator >= 1 / 120) { game.step(1 / 120); accumulator -= 1 / 120; }
+    painter.render(game, save); sound.update(delta, game.state === 'playing');
+    hudTick += delta; saveElapsed += delta;
+    if (hudTick > 0.1) { if (game.state !== 'home') updateHud(); hudTick = 0; }
+    if (saveElapsed > 1.5) { if (dirty) persist(); saveElapsed = 0; }
+  } else accumulator = 0;
+  requestAnimationFrame(frame);
+}
+syncSound(); showHome(); requestAnimationFrame(frame);
 
-// Start
-gameLoop();
-    </script>
+</script>
 </body>
 </html>
